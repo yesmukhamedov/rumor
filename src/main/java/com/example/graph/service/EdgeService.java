@@ -90,7 +90,7 @@ public class EdgeService {
     }
 
     @Transactional(readOnly = true)
-    public List<EdgeDto> listEdges() {
+    public List<EdgeDto> listEdgesDto() {
         return edgeRepository.findAll().stream()
             .map(this::toDto)
             .toList();

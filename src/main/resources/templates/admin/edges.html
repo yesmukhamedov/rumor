@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Edges Admin</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        nav a { margin-right: 1rem; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2rem; }
+        th, td { border: 1px solid #ddd; padding: 0.5rem; }
+        th { background-color: #f5f5f5; text-align: left; }
+        .message { padding: 0.75rem; margin-bottom: 1rem; border-radius: 4px; }
+        .message.success { background-color: #e7f6e7; color: #1e5c1e; }
+        .message.error { background-color: #fdecea; color: #9b1c1c; }
+        form.inline { display: inline; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+        .form-row label { min-width: 120px; }
+        .form-row input, .form-row select { min-width: 180px; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Edges Admin</h1>
+    <nav>
+        <a th:href="@{/admin/nodes}">Nodes</a>
+        <a th:href="@{/admin/edges}">Edges</a>
+        <a th:href="@{/admin/phones}">Phones</a>
+        <a th:href="@{/graph/view}">Graph View</a>
+    </nav>
+</header>
+
+<div th:if="${success}" class="message success" th:text="${success}"></div>
+<div th:if="${error}" class="message error" th:text="${error}"></div>
+
+<section>
+    <h2>Create Edge</h2>
+    <form th:action="@{/admin/edges}" method="post" th:object="${edgeForm}">
+        <div class="form-row">
+            <label for="fromId">From</label>
+            <select id="fromId" th:field="*{fromId}">
+                <option value="" selected disabled>-- select --</option>
+                <option value="PUBLIC">Public</option>
+                <option th:each="node : ${nodes}" th:value="${node.id}" th:text="${node.name}"></option>
+            </select>
+            <label for="toId">To</label>
+            <select id="toId" th:field="*{toId}" required>
+                <option value="" disabled selected>Select node</option>
+                <option th:each="node : ${nodes}" th:value="${node.id}" th:text="${node.name}"></option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label for="labelId">Label (reuse)</label>
+            <select id="labelId" th:field="*{labelId}">
+                <option value="" selected>-- no label --</option>
+                <option th:each="label : ${publicEdgeLabels}" th:value="${label.id}" th:text="${label.text}"></option>
+            </select>
+            <label for="newLabel">New label (create)</label>
+            <input id="newLabel" type="text" th:field="*{newLabel}" maxlength="200"
+                   placeholder="e.g., woman, kazakhstan" />
+            <label for="createdAt">Created At</label>
+            <input id="createdAt" type="datetime-local" th:field="*{createdAt}" />
+            <label for="expiredAt">Expired At</label>
+            <input id="expiredAt" type="datetime-local" th:field="*{expiredAt}" />
+            <button type="submit">Create Edge</button>
+        </div>
+    </form>
+</section>
+
+<section>
+    <h2>Edges</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Label</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Created At</th>
+            <th>Expired At</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${#lists.isEmpty(edges)}">
+            <td colspan="7">No edges yet.</td>
+        </tr>
+        <tr th:each="edge : ${edges}">
+            <td th:text="${edge.id}"></td>
+            <td th:text="${edge.label != null ? edge.label : '—'}"></td>
+            <td th:text="${edge.fromName != null ? edge.fromName : 'PUBLIC'}"></td>
+            <td th:text="${edge.toName}"></td>
+            <td th:text="${edge.createdAt != null ? edge.createdAt : '—'}"></td>
+            <td th:text="${edge.expiredAt != null ? edge.expiredAt : '—'}"></td>
+            <td>
+                <form class="inline" th:action="@{/admin/edges/{id}/delete(id=${edge.id})}" method="post">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+</body>
+</html>

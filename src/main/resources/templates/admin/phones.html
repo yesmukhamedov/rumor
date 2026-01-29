@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Phones Admin</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        nav a { margin-right: 1rem; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2rem; }
+        th, td { border: 1px solid #ddd; padding: 0.5rem; }
+        th { background-color: #f5f5f5; text-align: left; }
+        .message { padding: 0.75rem; margin-bottom: 1rem; border-radius: 4px; }
+        .message.success { background-color: #e7f6e7; color: #1e5c1e; }
+        .message.error { background-color: #fdecea; color: #9b1c1c; }
+        form.inline { display: inline; }
+        .form-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+        .form-row label { min-width: 120px; }
+        .form-row input, .form-row select { min-width: 180px; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Phones Admin</h1>
+    <nav>
+        <a th:href="@{/admin/nodes}">Nodes</a>
+        <a th:href="@{/admin/edges}">Edges</a>
+        <a th:href="@{/admin/phones}">Phones</a>
+        <a th:href="@{/graph/view}">Graph View</a>
+    </nav>
+</header>
+
+<div th:if="${success}" class="message success" th:text="${success}"></div>
+<div th:if="${error}" class="message error" th:text="${error}"></div>
+
+<section>
+    <h2>Create Phone</h2>
+    <form th:action="@{/admin/phones}" method="post" th:object="${phoneForm}">
+        <div class="form-row">
+            <label for="patternId">Pattern</label>
+            <select id="patternId" th:field="*{patternId}" required>
+                <option value="" selected disabled>-- select --</option>
+                <option th:each="pattern : ${patterns}"
+                        th:value="${pattern.id}"
+                        th:text="${pattern.code + ' (' + pattern.value + ')'}"></option>
+            </select>
+            <label for="value">Value</label>
+            <input id="value" type="text" th:field="*{value}" maxlength="32" required />
+            <button type="submit">Create Phone</button>
+        </div>
+    </form>
+</section>
+
+<section>
+    <h2>Phones</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Pattern Code</th>
+            <th>Pattern Mask</th>
+            <th>Value</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${#lists.isEmpty(phones)}">
+            <td colspan="5">No phones yet.</td>
+        </tr>
+        <tr th:each="phone : ${phones}">
+            <td th:text="${phone.id}"></td>
+            <td th:text="${phone.patternCode}"></td>
+            <td th:text="${phone.patternValue}"></td>
+            <td th:text="${phone.value}"></td>
+            <td>
+                <form class="inline" th:action="@{/admin/phones/{id}/delete(id=${phone.id})}" method="post">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+</body>
+</html>

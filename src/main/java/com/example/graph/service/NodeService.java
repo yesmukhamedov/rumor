@@ -32,7 +32,7 @@ public class NodeService {
     }
 
     @Transactional(readOnly = true)
-    public List<NodeDto> listNodes() {
+    public List<NodeDto> listNodesDto() {
         return nodeRepository.findAll().stream()
             .map(node -> new NodeDto(node.getId(), node.getName().getText()))
             .toList();

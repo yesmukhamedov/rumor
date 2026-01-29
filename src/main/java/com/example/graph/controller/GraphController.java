@@ -2,8 +2,6 @@ package com.example.graph.controller;
 
 import com.example.graph.service.EdgeService;
 import com.example.graph.service.NodeService;
-import com.example.graph.web.EdgeForm;
-import com.example.graph.web.NodeForm;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,27 +20,23 @@ public class GraphController {
 
     @GetMapping("/")
     public String home() {
-        return "redirect:/graph";
+        return "redirect:/admin/nodes";
+    }
+
+    @GetMapping("/admin")
+    public String adminHome() {
+        return "redirect:/admin/nodes";
     }
 
     @GetMapping("/graph")
-    public String graph(Model model) {
-        model.addAttribute("nodes", nodeService.listNodes());
-        model.addAttribute("edges", edgeService.listEdges());
-        model.addAttribute("publicEdgeLabels", edgeService.getPublicEdgeLabels());
-        if (!model.containsAttribute("nodeForm")) {
-            model.addAttribute("nodeForm", new NodeForm());
-        }
-        if (!model.containsAttribute("edgeForm")) {
-            model.addAttribute("edgeForm", new EdgeForm());
-        }
-        return "graph";
+    public String graph() {
+        return "redirect:/admin/nodes";
     }
 
     @GetMapping("/graph/view")
     public String viewGraph(Model model) {
-        model.addAttribute("nodes", nodeService.listNodes());
-        model.addAttribute("edges", edgeService.listEdges().stream()
+        model.addAttribute("nodes", nodeService.listNodesDto());
+        model.addAttribute("edges", edgeService.listEdgesDto().stream()
             .filter(edge -> edge.getFromId() != null)
             .toList());
         model.addAttribute("publicEdges", edgeService.getPublicEdges());

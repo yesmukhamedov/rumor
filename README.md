@@ -22,10 +22,16 @@ docker compose up -d
 mvn spring-boot:run
 ```
 
-3. Open the UI:
+3. Open the admin UI:
 
 ```
-http://localhost:8080/graph
+http://localhost:8080/admin/nodes
+```
+
+The visual graph view is available at:
+
+```
+http://localhost:8080/graph/view
 ```
 
 ## Configuration
@@ -43,3 +49,4 @@ Database settings live in `src/main/resources/application.yml` and default to:
 - Edges are directed and enforce:
   - no self-loops
   - no duplicate `(from, to)` pairs
+- Phone numbers are managed under the phones admin page.
