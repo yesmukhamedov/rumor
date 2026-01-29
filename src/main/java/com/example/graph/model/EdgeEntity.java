@@ -24,8 +24,8 @@ public class EdgeEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "name_id")
-    private NameEntity label;
+    @JoinColumn(name = "value_id")
+    private ValueEntity value;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "from_id", nullable = true)
@@ -46,12 +46,12 @@ public class EdgeEntity {
         return id;
     }
 
-    public NameEntity getLabel() {
-        return label;
+    public ValueEntity getValue() {
+        return value;
     }
 
-    public void setLabel(NameEntity label) {
-        this.label = label;
+    public void setValue(ValueEntity value) {
+        this.value = value;
     }
 
     public NodeEntity getFromNode() {

@@ -19,18 +19,18 @@ public class NodeEntity {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "name_id", nullable = false)
-    private NameEntity name;
+    @JoinColumn(name = "value_id", nullable = false)
+    private ValueEntity value;
 
     public Long getId() {
         return id;
     }
 
-    public NameEntity getName() {
-        return name;
+    public ValueEntity getValue() {
+        return value;
     }
 
-    public void setName(NameEntity name) {
-        this.name = name;
+    public void setValue(ValueEntity value) {
+        this.value = value;
     }
 }

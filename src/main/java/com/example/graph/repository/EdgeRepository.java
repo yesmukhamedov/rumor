@@ -1,7 +1,7 @@
 package com.example.graph.repository;
 
 import com.example.graph.model.EdgeEntity;
-import com.example.graph.model.NameEntity;
+import com.example.graph.model.ValueEntity;
 import java.util.List;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,10 +14,10 @@ public interface EdgeRepository extends JpaRepository<EdgeEntity, Long> {
     List<EdgeEntity> findAllByFromNodeId(Long fromId);
 
     @Query("""
-        select distinct e.label
+        select distinct e.value
         from EdgeEntity e
         where e.fromNode is null
-          and e.label is not null
+          and e.value is not null
         """)
-    List<NameEntity> findDistinctPublicEdgeLabels();
+    List<ValueEntity> findDistinctPublicEdgeValues();
 }

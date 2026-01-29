@@ -3,9 +3,11 @@ package com.example.graph.service;
 import com.example.graph.model.PhoneEntity;
 import com.example.graph.model.PhonePatternEntity;
 import com.example.graph.model.NodeEntity;
+import com.example.graph.model.ValueEntity;
 import com.example.graph.repository.NodeRepository;
 import com.example.graph.repository.PhonePatternRepository;
 import com.example.graph.repository.PhoneRepository;
+import com.example.graph.repository.ValueRepository;
 import com.example.graph.web.dto.PhoneDto;
 import com.example.graph.web.dto.PhonePatternDto;
 import java.util.Comparator;
@@ -18,13 +20,16 @@ public class PhoneService {
     private final PhoneRepository phoneRepository;
     private final PhonePatternRepository phonePatternRepository;
     private final NodeRepository nodeRepository;
+    private final ValueRepository valueRepository;
 
     public PhoneService(PhoneRepository phoneRepository,
                         PhonePatternRepository phonePatternRepository,
-                        NodeRepository nodeRepository) {
+                        NodeRepository nodeRepository,
+                        ValueRepository valueRepository) {
         this.phoneRepository = phoneRepository;
         this.phonePatternRepository = phonePatternRepository;
         this.nodeRepository = nodeRepository;
+        this.valueRepository = valueRepository;
     }
 
     public PhoneEntity createPhone(Long nodeId, Long patternId, String value) {
@@ -44,14 +49,21 @@ public class PhoneService {
         if (phoneRepository.existsByNodeId(nodeId)) {
             throw new IllegalArgumentException("Selected node already has a phone.");
         }
-        if (phoneRepository.existsByValue(value)) {
+        if (phoneRepository.existsByValueText(value)) {
             throw new IllegalArgumentException("Phone value already exists.");
         }
         validateMaskedValue(value, pattern.getValue());
+        ValueEntity valueEntity = valueRepository.findByText(value)
+            .orElseGet(() -> {
+                ValueEntity created = new ValueEntity();
+                created.setText(value);
+                created.setCreatedAt(java.time.OffsetDateTime.now());
+                return valueRepository.save(created);
+            });
         PhoneEntity phone = new PhoneEntity();
         phone.setPattern(pattern);
         phone.setNode(node);
-        phone.setValue(value);
+        phone.setValue(valueEntity);
         return phoneRepository.save(phone);
     }
 
@@ -64,9 +76,9 @@ public class PhoneService {
         return phoneRepository.findAll().stream()
             .map(phone -> new PhoneDto(
                 phone.getId(),
-                phone.getNode().getName().getText(),
+                phone.getNode().getValue().getText(),
                 phone.getPattern().getCode(),
-                phone.getValue()
+                phone.getValue().getText()
             ))
             .toList();
     }

@@ -35,7 +35,7 @@ public class AdminEdgeController {
     public String edges(Model model) {
         model.addAttribute("nodes", nodeService.listNodesDto());
         model.addAttribute("edges", edgeService.listEdgesDto());
-        model.addAttribute("publicEdgeLabels", edgeService.getPublicEdgeLabels());
+        model.addAttribute("publicEdgeValues", edgeService.getPublicEdgeValues());
         if (!model.containsAttribute("edgeForm")) {
             model.addAttribute("edgeForm", new EdgeForm());
         }

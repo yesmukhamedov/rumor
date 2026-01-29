@@ -1,13 +1,13 @@
 package com.example.graph.service;
 
 import com.example.graph.model.EdgeEntity;
-import com.example.graph.model.NameEntity;
 import com.example.graph.model.NodeEntity;
+import com.example.graph.model.ValueEntity;
 import com.example.graph.repository.EdgeRepository;
-import com.example.graph.repository.NameRepository;
 import com.example.graph.repository.NodeRepository;
+import com.example.graph.repository.ValueRepository;
 import com.example.graph.web.dto.EdgeDto;
-import com.example.graph.web.dto.NameDto;
+import com.example.graph.web.dto.ValueDto;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -20,12 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class EdgeService {
     private final EdgeRepository edgeRepository;
     private final NodeRepository nodeRepository;
-    private final NameRepository nameRepository;
+    private final ValueRepository valueRepository;
 
-    public EdgeService(EdgeRepository edgeRepository, NodeRepository nodeRepository, NameRepository nameRepository) {
+    public EdgeService(EdgeRepository edgeRepository, NodeRepository nodeRepository, ValueRepository valueRepository) {
         this.edgeRepository = edgeRepository;
         this.nodeRepository = nodeRepository;
-        this.nameRepository = nameRepository;
+        this.valueRepository = valueRepository;
     }
 
     public EdgeEntity createEdge(Long fromId, Long toId, Long labelId, String newLabel,
@@ -58,29 +58,29 @@ public class EdgeService {
         edge.setCreatedAt(createdAtOffset);
         edge.setExpiredAt(expiredAtOffset);
 
-        NameEntity label = resolveLabel(labelId, newLabel);
-        if (label != null) {
-            edge.setLabel(label);
+        ValueEntity value = resolveValue(labelId, newLabel);
+        if (value != null) {
+            edge.setValue(value);
         }
         return edgeRepository.save(edge);
     }
 
-    private NameEntity resolveLabel(Long labelId, String newLabel) {
+    private ValueEntity resolveValue(Long labelId, String newLabel) {
         String trimmedLabel = newLabel == null ? null : newLabel.trim();
         if (trimmedLabel != null && !trimmedLabel.isEmpty()) {
             if (trimmedLabel.length() > 200) {
                 throw new IllegalArgumentException("New label must be between 1 and 200 characters.");
             }
-            NameEntity nameEntity = new NameEntity();
-            nameEntity.setText(trimmedLabel);
-            nameEntity.setCreatedAt(OffsetDateTime.now());
-            return nameRepository.save(nameEntity);
+            ValueEntity valueEntity = new ValueEntity();
+            valueEntity.setText(trimmedLabel);
+            valueEntity.setCreatedAt(OffsetDateTime.now());
+            return valueRepository.save(valueEntity);
         }
         if (newLabel != null && !newLabel.isEmpty() && trimmedLabel != null && trimmedLabel.isEmpty()) {
             throw new IllegalArgumentException("New label must be between 1 and 200 characters.");
         }
         if (labelId != null) {
-            NameEntity label = edgeRepository.findDistinctPublicEdgeLabels().stream()
+            ValueEntity label = edgeRepository.findDistinctPublicEdgeValues().stream()
                 .filter(candidate -> labelId.equals(candidate.getId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Label is not a public edge label."));
@@ -108,10 +108,10 @@ public class EdgeService {
     }
 
     @Transactional(readOnly = true)
-    public List<NameDto> getPublicEdgeLabels() {
-        return edgeRepository.findDistinctPublicEdgeLabels().stream()
-            .map(label -> new NameDto(label.getId(), label.getText()))
-            .sorted(Comparator.comparing(NameDto::getText, String.CASE_INSENSITIVE_ORDER))
+    public List<ValueDto> getPublicEdgeValues() {
+        return edgeRepository.findDistinctPublicEdgeValues().stream()
+            .map(value -> new ValueDto(value.getId(), value.getText()))
+            .sorted(Comparator.comparing(ValueDto::getText, String.CASE_INSENSITIVE_ORDER))
             .toList();
     }
 
@@ -129,11 +129,11 @@ public class EdgeService {
             edge.getId(),
             fromNode == null ? null : fromNode.getId(),
             toNode.getId(),
-            edge.getLabel() == null ? null : edge.getLabel().getText(),
+            edge.getValue() == null ? null : edge.getValue().getText(),
             edge.getCreatedAt(),
             edge.getExpiredAt(),
-            fromNode == null ? null : fromNode.getName().getText(),
-            toNode.getName().getText()
+            fromNode == null ? null : fromNode.getValue().getText(),
+            toNode.getValue().getText()
         );
     }
 }

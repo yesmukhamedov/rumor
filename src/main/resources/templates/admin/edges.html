@@ -52,7 +52,7 @@
             <label for="labelId">Label (reuse)</label>
             <select id="labelId" th:field="*{labelId}">
                 <option value="" selected>-- no label --</option>
-                <option th:each="label : ${publicEdgeLabels}" th:value="${label.id}" th:text="${label.text}"></option>
+                <option th:each="label : ${publicEdgeValues}" th:value="${label.id}" th:text="${label.text}"></option>
             </select>
             <label for="newLabel">New label (create)</label>
             <input id="newLabel" type="text" th:field="*{newLabel}" maxlength="200"

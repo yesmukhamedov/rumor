@@ -1,6 +1,5 @@
 package com.example.graph.model;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -9,9 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "phones")
@@ -30,10 +27,10 @@ public class PhoneEntity {
     @JoinColumn(name = "node_id", nullable = false)
     private NodeEntity node;
 
-    @NotBlank
-    @Size(max = 64)
-    @Column(nullable = false, length = 64)
-    private String value;
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "value_id", nullable = false)
+    private ValueEntity value;
 
     public Long getId() {
         return id;
@@ -55,11 +52,11 @@ public class PhoneEntity {
         this.node = node;
     }
 
-    public String getValue() {
+    public ValueEntity getValue() {
         return value;
     }
 
-    public void setValue(String value) {
+    public void setValue(ValueEntity value) {
         this.value = value;
     }
 }

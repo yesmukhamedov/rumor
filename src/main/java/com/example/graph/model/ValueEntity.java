@@ -12,8 +12,8 @@ import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "names")
-public class NameEntity {
+@Table(name = "app_values")
+public class ValueEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
