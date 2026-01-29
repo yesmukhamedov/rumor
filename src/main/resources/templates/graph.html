@@ -68,7 +68,8 @@
         <div class="form-row">
             <label for="fromId">From</label>
             <select id="fromId" th:field="*{fromId}">
-                <option value="">Public</option>
+                <option value="" selected disabled>-- select --</option>
+                <option value="PUBLIC">Public</option>
                 <option th:each="node : ${nodes}" th:value="${node.id}" th:text="${node.name}"></option>
             </select>
             <label for="toId">To</label>

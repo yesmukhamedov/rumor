@@ -3,7 +3,7 @@ package com.example.graph.web;
 import jakarta.validation.constraints.NotNull;
 
 public class EdgeForm {
-    private Long fromId;
+    private String fromId;
 
     @NotNull(message = "To node is required.")
     private Long toId;
@@ -14,11 +14,11 @@ public class EdgeForm {
 
     private String expiredAt;
 
-    public Long getFromId() {
+    public String getFromId() {
         return fromId;
     }
 
-    public void setFromId(Long fromId) {
+    public void setFromId(String fromId) {
         this.fromId = fromId;
     }
 

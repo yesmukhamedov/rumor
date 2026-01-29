@@ -18,6 +18,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/edges")
 public class EdgeController {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final String PUBLIC_SENTINEL = "PUBLIC";
 
     private final EdgeService edgeService;
 
@@ -33,11 +34,21 @@ public class EdgeController {
             redirectAttributes.addFlashAttribute("edgeForm", edgeForm);
             return "redirect:/graph";
         }
+        String fromValue = edgeForm.getFromId();
+        if (fromValue == null || fromValue.isBlank()) {
+            redirectAttributes.addFlashAttribute("error", "From is required (choose Public or a node).");
+            redirectAttributes.addFlashAttribute("edgeForm", edgeForm);
+            return "redirect:/graph";
+        }
         try {
+            Long fromId = parseFromId(fromValue);
             LocalDateTime createdAt = parseDateTime(edgeForm.getCreatedAt());
             LocalDateTime expiredAt = parseDateTime(edgeForm.getExpiredAt());
-            edgeService.createEdge(edgeForm.getFromId(), edgeForm.getToId(), edgeForm.getLabel(), createdAt, expiredAt);
+            edgeService.createEdge(fromId, edgeForm.getToId(), edgeForm.getLabel(), createdAt, expiredAt);
             redirectAttributes.addFlashAttribute("success", "Edge created.");
+        } catch (NumberFormatException ex) {
+            redirectAttributes.addFlashAttribute("error", "From node not found.");
+            redirectAttributes.addFlashAttribute("edgeForm", edgeForm);
         } catch (DateTimeParseException ex) {
             redirectAttributes.addFlashAttribute("error", "Invalid date/time format.");
             redirectAttributes.addFlashAttribute("edgeForm", edgeForm);
@@ -61,5 +72,12 @@ public class EdgeController {
             return null;
         }
         return LocalDateTime.parse(value, DATE_TIME_FORMATTER);
+    }
+
+    private Long parseFromId(String fromId) {
+        if (PUBLIC_SENTINEL.equals(fromId)) {
+            return null;
+        }
+        return Long.parseLong(fromId);
     }
 }

@@ -11,6 +11,8 @@
         #network { flex: 1; height: 80vh; border: 1px solid #ddd; }
         .taskbar { width: 300px; border: 1px solid #ddd; padding: 1rem; border-radius: 4px; }
         .taskbar h2 { margin-top: 0; }
+        .taskbar section + section { margin-top: 1.5rem; }
+        .taskbar .panel-title { display: flex; align-items: baseline; justify-content: space-between; }
         .taskbar ul { list-style: none; padding-left: 0; margin: 0; }
         .taskbar li { padding: 0.5rem 0; border-bottom: 1px solid #eee; }
         .taskbar li:last-child { border-bottom: none; }
@@ -24,22 +26,40 @@
     <div class="layout">
         <div id="network"></div>
         <aside class="taskbar">
-            <h2>Public relations</h2>
-            <p th:if="${#lists.isEmpty(publicEdges)}">No public relations yet.</p>
-            <ul th:if="${!#lists.isEmpty(publicEdges)}">
-                <li th:each="edge : ${publicEdges}">
-                    <div>
-                        <strong th:text="${edge.label != null ? edge.label : '(unnamed relation)'}"></strong>
-                        <span> → </span>
-                        <span th:text="${edge.toName}"></span>
-                    </div>
-                    <div class="meta">
-                        <span th:if="${edge.createdAt != null}" th:text="|Created: ${edge.createdAt}|"></span>
-                        <span th:if="${edge.createdAt != null && edge.expiredAt != null}"> · </span>
-                        <span th:if="${edge.expiredAt != null}" th:text="|Expired: ${edge.expiredAt}|"></span>
-                    </div>
-                </li>
-            </ul>
+            <section>
+                <div class="panel-title">
+                    <h2>Connections</h2>
+                    <span class="meta" id="selectedNodeName">Selected node: none</span>
+                </div>
+                <div id="connectionsPanel">
+                    <p class="meta">Click a node to see its connections.</p>
+                </div>
+            </section>
+            <section>
+                <div class="panel-title">
+                    <h2>Public relations</h2>
+                    <button type="button" id="clearPublicFilter">Clear</button>
+                </div>
+                <label for="publicAt">At time</label>
+                <input id="publicAt" type="datetime-local" />
+                <p th:if="${#lists.isEmpty(publicEdges)}">No public relations yet.</p>
+                <ul th:if="${!#lists.isEmpty(publicEdges)}" id="publicEdgesList">
+                    <li th:each="edge : ${publicEdges}"
+                        th:attr="data-created=${edge.createdAt != null ? #temporals.format(edge.createdAt, 'yyyy-MM-dd''T''HH:mm') : ''},
+                                 data-expired=${edge.expiredAt != null ? #temporals.format(edge.expiredAt, 'yyyy-MM-dd''T''HH:mm') : ''}">
+                        <div>
+                            <strong th:text="${edge.label != null ? edge.label : '(unnamed relation)'}"></strong>
+                            <span> → </span>
+                            <span th:text="${edge.toName}"></span>
+                        </div>
+                        <div class="meta">
+                            <span th:if="${edge.createdAt != null}" th:text="|Created: ${edge.createdAt}|"></span>
+                            <span th:if="${edge.createdAt != null && edge.expiredAt != null}"> · </span>
+                            <span th:if="${edge.expiredAt != null}" th:text="|Expired: ${edge.expiredAt}|"></span>
+                        </div>
+                    </li>
+                </ul>
+            </section>
         </aside>
     </div>
 </div>
@@ -48,6 +68,7 @@
 <script th:inline="javascript">
     const nodes = /*[[${nodes}]]*/ [];
     const edges = /*[[${edges}]]*/ [];
+    const publicEdges = /*[[${publicEdges}]]*/ [];
 
     const nodesData = nodes.map(node => ({
         id: node.id,
@@ -75,7 +96,83 @@
         }
     };
 
-    new vis.Network(container, data, options);
+    const nodeNameById = new Map(nodes.map(node => [node.id, node.name]));
+    const network = new vis.Network(container, data, options);
+
+    const selectedNodeName = document.getElementById("selectedNodeName");
+    const connectionsPanel = document.getElementById("connectionsPanel");
+
+    function renderConnections(selectedId) {
+        if (!selectedId) {
+            selectedNodeName.textContent = "Selected node: none";
+            connectionsPanel.innerHTML = "<p class=\"meta\">Click a node to see its connections.</p>";
+            return;
+        }
+        const selectedName = nodeNameById.get(selectedId) || "Unknown";
+        selectedNodeName.textContent = `Selected node: ${selectedName}`;
+
+        const outgoing = edges
+            .filter(edge => edge.fromId === selectedId)
+            .map(edge => nodeNameById.get(edge.toId) || `Node ${edge.toId}`);
+        const incoming = edges
+            .filter(edge => edge.toId === selectedId)
+            .map(edge => nodeNameById.get(edge.fromId) || `Node ${edge.fromId}`);
+
+        if (outgoing.length === 0 && incoming.length === 0) {
+            connectionsPanel.innerHTML = "<p class=\"meta\">No connections.</p>";
+            return;
+        }
+
+        const outgoingItems = outgoing.map(name => `<li>→ ${name}</li>`).join("");
+        const incomingItems = incoming.map(name => `<li>← ${name}</li>`).join("");
+        connectionsPanel.innerHTML = `
+            ${outgoing.length ? `<h3>Outgoing</h3><ul>${outgoingItems}</ul>` : ""}
+            ${incoming.length ? `<h3>Incoming</h3><ul>${incomingItems}</ul>` : ""}
+        `;
+    }
+
+    network.on("click", function (params) {
+        if (params.nodes && params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            renderConnections(nodeId);
+        }
+    });
+
+    const publicAtInput = document.getElementById("publicAt");
+    const clearPublicFilter = document.getElementById("clearPublicFilter");
+    const publicEdgesList = document.getElementById("publicEdgesList");
+
+    function filterPublicEdges() {
+        if (!publicEdgesList) {
+            return;
+        }
+        const value = publicAtInput.value;
+        const selectedTime = value ? new Date(value) : null;
+        const items = publicEdgesList.querySelectorAll("li");
+        items.forEach(item => {
+            if (!selectedTime) {
+                item.style.display = "";
+                return;
+            }
+            const createdValue = item.dataset.created;
+            const expiredValue = item.dataset.expired;
+            const createdAt = createdValue ? new Date(createdValue) : null;
+            const expiredAt = expiredValue ? new Date(expiredValue) : null;
+            const isActive = (!createdAt || createdAt <= selectedTime)
+                && (!expiredAt || selectedTime <= expiredAt);
+            item.style.display = isActive ? "" : "none";
+        });
+    }
+
+    if (publicAtInput) {
+        publicAtInput.addEventListener("change", filterPublicEdges);
+    }
+    if (clearPublicFilter) {
+        clearPublicFilter.addEventListener("click", () => {
+            publicAtInput.value = "";
+            filterPublicEdges();
+        });
+    }
 </script>
 </body>
 </html>
