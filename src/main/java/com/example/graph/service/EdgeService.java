@@ -4,6 +4,7 @@ import com.example.graph.model.EdgeEntity;
 import com.example.graph.model.NameEntity;
 import com.example.graph.model.NodeEntity;
 import com.example.graph.repository.EdgeRepository;
+import com.example.graph.repository.NameRepository;
 import com.example.graph.repository.NodeRepository;
 import com.example.graph.web.dto.EdgeDto;
 import com.example.graph.web.dto.NameDto;
@@ -19,13 +20,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class EdgeService {
     private final EdgeRepository edgeRepository;
     private final NodeRepository nodeRepository;
+    private final NameRepository nameRepository;
 
-    public EdgeService(EdgeRepository edgeRepository, NodeRepository nodeRepository) {
+    public EdgeService(EdgeRepository edgeRepository, NodeRepository nodeRepository, NameRepository nameRepository) {
         this.edgeRepository = edgeRepository;
         this.nodeRepository = nodeRepository;
+        this.nameRepository = nameRepository;
     }
 
-    public EdgeEntity createEdge(Long fromId, Long toId, Long labelId,
+    public EdgeEntity createEdge(Long fromId, Long toId, Long labelId, String newLabel,
                                  LocalDateTime createdAt, LocalDateTime expiredAt) {
         if (toId == null) {
             throw new IllegalArgumentException("To node is required.");
@@ -55,14 +58,35 @@ public class EdgeService {
         edge.setCreatedAt(createdAtOffset);
         edge.setExpiredAt(expiredAtOffset);
 
+        NameEntity label = resolveLabel(labelId, newLabel);
+        if (label != null) {
+            edge.setLabel(label);
+        }
+        return edgeRepository.save(edge);
+    }
+
+    private NameEntity resolveLabel(Long labelId, String newLabel) {
+        String trimmedLabel = newLabel == null ? null : newLabel.trim();
+        if (trimmedLabel != null && !trimmedLabel.isEmpty()) {
+            if (trimmedLabel.length() > 200) {
+                throw new IllegalArgumentException("New label must be between 1 and 200 characters.");
+            }
+            NameEntity nameEntity = new NameEntity();
+            nameEntity.setText(trimmedLabel);
+            nameEntity.setCreatedAt(OffsetDateTime.now());
+            return nameRepository.save(nameEntity);
+        }
+        if (newLabel != null && !newLabel.isEmpty() && trimmedLabel != null && trimmedLabel.isEmpty()) {
+            throw new IllegalArgumentException("New label must be between 1 and 200 characters.");
+        }
         if (labelId != null) {
             NameEntity label = edgeRepository.findDistinctPublicEdgeLabels().stream()
                 .filter(candidate -> labelId.equals(candidate.getId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Label is not a public edge label."));
-            edge.setLabel(label);
+            return label;
         }
-        return edgeRepository.save(edge);
+        return null;
     }
 
     @Transactional(readOnly = true)

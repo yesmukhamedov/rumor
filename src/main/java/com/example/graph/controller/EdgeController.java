@@ -44,7 +44,8 @@ public class EdgeController {
             Long fromId = parseFromId(fromValue);
             LocalDateTime createdAt = parseDateTime(edgeForm.getCreatedAt());
             LocalDateTime expiredAt = parseDateTime(edgeForm.getExpiredAt());
-            edgeService.createEdge(fromId, edgeForm.getToId(), edgeForm.getLabelId(), createdAt, expiredAt);
+            edgeService.createEdge(fromId, edgeForm.getToId(), edgeForm.getLabelId(), edgeForm.getNewLabel(),
+                createdAt, expiredAt);
             redirectAttributes.addFlashAttribute("success", "Edge created.");
         } catch (NumberFormatException ex) {
             redirectAttributes.addFlashAttribute("error", "From node not found.");

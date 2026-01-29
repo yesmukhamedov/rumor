@@ -10,6 +10,8 @@ public class EdgeForm {
 
     private Long labelId;
 
+    private String newLabel;
+
     private String createdAt;
 
     private String expiredAt;
@@ -36,6 +38,14 @@ public class EdgeForm {
 
     public void setLabelId(Long labelId) {
         this.labelId = labelId;
+    }
+
+    public String getNewLabel() {
+        return newLabel;
+    }
+
+    public void setNewLabel(String newLabel) {
+        this.newLabel = newLabel;
     }
 
     public String getCreatedAt() {
