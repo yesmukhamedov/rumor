@@ -44,7 +44,8 @@
             </select>
             <label for="toId">To</label>
             <select id="toId" th:field="*{toId}" required>
-                <option value="" disabled selected>Select node</option>
+                <option value="" selected disabled>-- select --</option>
+                <option value="PRIVATE">Private</option>
                 <option th:each="node : ${nodes}" th:value="${node.id}" th:text="${node.name}"></option>
             </select>
         </div>
@@ -87,8 +88,8 @@
         <tr th:each="edge : ${edges}">
             <td th:text="${edge.id}"></td>
             <td th:text="${edge.label != null ? edge.label : '—'}"></td>
-            <td th:text="${edge.fromName != null ? edge.fromName : 'PUBLIC'}"></td>
-            <td th:text="${edge.toName}"></td>
+            <td th:text="${edge.fromName == null and edge.toName == null ? 'INVALID' : (edge.fromName != null ? edge.fromName : 'PUBLIC')}"></td>
+            <td th:text="${edge.fromName == null and edge.toName == null ? 'INVALID' : (edge.toName != null ? edge.toName : 'PRIVATE')}"></td>
             <td th:text="${edge.createdAt != null ? edge.createdAt : '—'}"></td>
             <td th:text="${edge.expiredAt != null ? edge.expiredAt : '—'}"></td>
             <td>

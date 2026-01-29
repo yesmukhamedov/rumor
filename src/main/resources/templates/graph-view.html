@@ -37,6 +37,14 @@
             </section>
             <section>
                 <div class="panel-title">
+                    <h2>Private relations</h2>
+                </div>
+                <div id="privateRelationsPanel">
+                    <p class="meta">Click a node to see its private relations.</p>
+                </div>
+            </section>
+            <section>
+                <div class="panel-title">
                     <h2>Public relations</h2>
                     <button type="button" id="clearPublicFilter">Clear</button>
                 </div>
@@ -75,7 +83,10 @@
         label: node.name
     }));
 
-    const edgesData = edges.map(edge => ({
+    const normalEdges = edges.filter(edge => edge.fromId != null && edge.toId != null);
+    const privateEdges = edges.filter(edge => edge.fromId != null && edge.toId == null);
+
+    const edgesData = normalEdges.map(edge => ({
         from: edge.fromId,
         to: edge.toId,
         label: edge.label ? edge.label : "",
@@ -101,6 +112,7 @@
 
     const selectedNodeName = document.getElementById("selectedNodeName");
     const connectionsPanel = document.getElementById("connectionsPanel");
+    const privateRelationsPanel = document.getElementById("privateRelationsPanel");
 
     function renderConnections(selectedId) {
         if (!selectedId) {
@@ -111,10 +123,10 @@
         const selectedName = nodeNameById.get(selectedId) || "Unknown";
         selectedNodeName.textContent = `Selected node: ${selectedName}`;
 
-        const outgoing = edges
+        const outgoing = normalEdges
             .filter(edge => edge.fromId === selectedId)
             .map(edge => nodeNameById.get(edge.toId) || `Node ${edge.toId}`);
-        const incoming = edges
+        const incoming = normalEdges
             .filter(edge => edge.toId === selectedId)
             .map(edge => nodeNameById.get(edge.fromId) || `Node ${edge.fromId}`);
 
@@ -131,10 +143,38 @@
         `;
     }
 
+    function renderPrivateRelations(selectedId) {
+        if (!selectedId) {
+            privateRelationsPanel.innerHTML = "<p class=\"meta\">Click a node to see its private relations.</p>";
+            return;
+        }
+
+        const relations = privateEdges.filter(edge => edge.fromId === selectedId);
+        if (relations.length === 0) {
+            privateRelationsPanel.innerHTML = "<p class=\"meta\">No private relations.</p>";
+            return;
+        }
+
+        const items = relations.map(edge => {
+            const label = edge.label ? edge.label : "—";
+            const createdAt = edge.createdAt ? `Created: ${edge.createdAt}` : "";
+            const expiredAt = edge.expiredAt ? `Expired: ${edge.expiredAt}` : "";
+            const meta = [createdAt, expiredAt].filter(Boolean).join(" · ");
+            return `
+                <li>
+                    <div><strong>${label}</strong></div>
+                    ${meta ? `<div class="meta">${meta}</div>` : ""}
+                </li>
+            `;
+        }).join("");
+        privateRelationsPanel.innerHTML = `<ul>${items}</ul>`;
+    }
+
     network.on("click", function (params) {
         if (params.nodes && params.nodes.length > 0) {
             const nodeId = params.nodes[0];
             renderConnections(nodeId);
+            renderPrivateRelations(nodeId);
         }
     });
 

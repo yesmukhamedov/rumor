@@ -22,6 +22,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class AdminEdgeController {
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
     private static final String PUBLIC_SENTINEL = "PUBLIC";
+    private static final String PRIVATE_SENTINEL = "PRIVATE";
 
     private final EdgeService edgeService;
     private final NodeService nodeService;
@@ -56,15 +57,22 @@ public class AdminEdgeController {
             redirectAttributes.addFlashAttribute("edgeForm", edgeForm);
             return "redirect:/admin/edges";
         }
+        String toValue = edgeForm.getToId();
+        if (toValue == null || toValue.isBlank()) {
+            redirectAttributes.addFlashAttribute("error", "To is required (choose Private or a node).");
+            redirectAttributes.addFlashAttribute("edgeForm", edgeForm);
+            return "redirect:/admin/edges";
+        }
         try {
             Long fromId = parseFromId(fromValue);
+            Long toId = parseToId(toValue);
             LocalDateTime createdAt = parseDateTime(edgeForm.getCreatedAt());
             LocalDateTime expiredAt = parseDateTime(edgeForm.getExpiredAt());
-            edgeService.createEdge(fromId, edgeForm.getToId(), edgeForm.getLabelId(), edgeForm.getNewLabel(),
+            edgeService.createEdge(fromId, toId, edgeForm.getLabelId(), edgeForm.getNewLabel(),
                 createdAt, expiredAt);
             redirectAttributes.addFlashAttribute("success", "Edge created.");
         } catch (NumberFormatException ex) {
-            redirectAttributes.addFlashAttribute("error", "From node not found.");
+            redirectAttributes.addFlashAttribute("error", "Node selection is invalid.");
             redirectAttributes.addFlashAttribute("edgeForm", edgeForm);
         } catch (DateTimeParseException ex) {
             redirectAttributes.addFlashAttribute("error", "Invalid date/time format.");
@@ -96,5 +104,12 @@ public class AdminEdgeController {
             return null;
         }
         return Long.parseLong(fromId);
+    }
+
+    private Long parseToId(String toId) {
+        if (PRIVATE_SENTINEL.equals(toId)) {
+            return null;
+        }
+        return Long.parseLong(toId);
     }
 }
