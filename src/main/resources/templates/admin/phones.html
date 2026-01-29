@@ -36,16 +36,27 @@
     <h2>Create Phone</h2>
     <form th:action="@{/admin/phones}" method="post" th:object="${phoneForm}">
         <div class="form-row">
+            <label for="nodeId">Node</label>
+            <select id="nodeId" th:field="*{nodeId}" required>
+                <option value="" selected disabled>-- select --</option>
+                <option th:each="node : ${availableNodes}"
+                        th:value="${node.id}"
+                        th:text="${node.name}"></option>
+            </select>
             <label for="patternId">Pattern</label>
             <select id="patternId" th:field="*{patternId}" required>
                 <option value="" selected disabled>-- select --</option>
                 <option th:each="pattern : ${patterns}"
                         th:value="${pattern.id}"
-                        th:text="${pattern.code + ' (' + pattern.value + ')'}"></option>
+                        th:text="${pattern.code}"
+                        th:attr="data-mask=${pattern.value}"></option>
             </select>
-            <label for="value">Value</label>
-            <input id="value" type="text" th:field="*{value}" maxlength="32" required />
+            <label for="phoneValue">Phone</label>
+            <input id="phoneValue" type="text" th:field="*{value}" maxlength="64" autocomplete="off" required />
             <button type="submit">Create Phone</button>
+        </div>
+        <div class="form-row">
+            <div id="maskHint"></div>
         </div>
     </form>
 </section>
@@ -56,8 +67,8 @@
         <thead>
         <tr>
             <th>ID</th>
+            <th>Node Name</th>
             <th>Pattern Code</th>
-            <th>Pattern Mask</th>
             <th>Value</th>
             <th>Actions</th>
         </tr>
@@ -68,8 +79,8 @@
         </tr>
         <tr th:each="phone : ${phones}">
             <td th:text="${phone.id}"></td>
+            <td th:text="${phone.nodeName}"></td>
             <td th:text="${phone.patternCode}"></td>
-            <td th:text="${phone.patternValue}"></td>
             <td th:text="${phone.value}"></td>
             <td>
                 <form class="inline" th:action="@{/admin/phones/{id}/delete(id=${phone.id})}" method="post">
@@ -80,5 +91,104 @@
         </tbody>
     </table>
 </section>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const patternSelect = document.getElementById('patternId');
+        const phoneInput = document.getElementById('phoneValue');
+        const maskHint = document.getElementById('maskHint');
+        let mask = '';
+        let underscorePositions = [];
+
+        function updateUnderscorePositions() {
+            underscorePositions = [];
+            for (let i = 0; i < mask.length; i++) {
+                if (mask[i] === '_') {
+                    underscorePositions.push(i);
+                }
+            }
+        }
+
+        function normalizeValue(value) {
+            if (!mask) {
+                return value;
+            }
+            const chars = mask.split('');
+            for (let i = 0; i < mask.length; i++) {
+                if (mask[i] === '_') {
+                    chars[i] = /\d/.test(value[i]) ? value[i] : '_';
+                }
+            }
+            return chars.join('');
+        }
+
+        function setMask(newMask, preserveInput) {
+            mask = newMask || '';
+            updateUnderscorePositions();
+            phoneInput.maxLength = mask.length || 64;
+            if (!preserveInput || !phoneInput.value) {
+                phoneInput.value = mask;
+            } else {
+                phoneInput.value = normalizeValue(phoneInput.value);
+            }
+            maskHint.textContent = mask ? `Mask: ${mask}` : '';
+        }
+
+        function fillNextDigit(digit) {
+            const current = phoneInput.value;
+            const nextIndex = underscorePositions.find((index) => current[index] === '_');
+            if (nextIndex === undefined) {
+                return;
+            }
+            const chars = current.split('');
+            chars[nextIndex] = digit;
+            phoneInput.value = chars.join('');
+        }
+
+        function removePreviousDigit() {
+            const current = phoneInput.value;
+            for (let i = underscorePositions.length - 1; i >= 0; i--) {
+                const index = underscorePositions[i];
+                if (/\d/.test(current[index])) {
+                    const chars = current.split('');
+                    chars[index] = '_';
+                    phoneInput.value = chars.join('');
+                    return;
+                }
+            }
+        }
+
+        patternSelect.addEventListener('change', function () {
+            const selected = patternSelect.options[patternSelect.selectedIndex];
+            setMask(selected ? selected.dataset.mask : '', false);
+        });
+
+        phoneInput.addEventListener('keydown', function (event) {
+            if (!mask) {
+                return;
+            }
+            if (event.ctrlKey || event.metaKey) {
+                return;
+            }
+            if (event.key === 'Backspace' || event.key === 'Delete') {
+                event.preventDefault();
+                removePreviousDigit();
+                return;
+            }
+            if (event.key.length === 1 && /\d/.test(event.key)) {
+                event.preventDefault();
+                fillNextDigit(event.key);
+                return;
+            }
+            if (['Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+                return;
+            }
+            event.preventDefault();
+        });
+
+        const initialOption = patternSelect.options[patternSelect.selectedIndex];
+        const initialMask = initialOption ? initialOption.dataset.mask : '';
+        setMask(initialMask, true);
+    });
+</script>
 </body>
 </html>

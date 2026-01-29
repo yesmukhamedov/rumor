@@ -38,6 +38,13 @@ public class NodeService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<NodeDto> listNodesWithoutPhoneDto() {
+        return nodeRepository.findNodesWithoutPhone().stream()
+            .map(node -> new NodeDto(node.getId(), node.getName().getText()))
+            .toList();
+    }
+
     public void deleteNode(Long id) {
         nodeRepository.deleteById(id);
     }

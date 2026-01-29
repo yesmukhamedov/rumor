@@ -5,11 +5,14 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public class PhoneForm {
+    @NotNull(message = "Node is required.")
+    private Long nodeId;
+
     @NotNull(message = "Pattern is required.")
     private Long patternId;
 
     @NotBlank(message = "Value is required.")
-    @Size(max = 32, message = "Value must be at most 32 characters.")
+    @Size(max = 64, message = "Value must be at most 64 characters.")
     private String value;
 
     public Long getPatternId() {
@@ -18,6 +21,14 @@ public class PhoneForm {
 
     public void setPatternId(Long patternId) {
         this.patternId = patternId;
+    }
+
+    public Long getNodeId() {
+        return nodeId;
+    }
+
+    public void setNodeId(Long nodeId) {
+        this.nodeId = nodeId;
     }
 
     public String getValue() {

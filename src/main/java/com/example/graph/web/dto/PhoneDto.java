@@ -2,14 +2,14 @@ package com.example.graph.web.dto;
 
 public class PhoneDto {
     private final Long id;
+    private final String nodeName;
     private final String patternCode;
-    private final String patternValue;
     private final String value;
 
-    public PhoneDto(Long id, String patternCode, String patternValue, String value) {
+    public PhoneDto(Long id, String nodeName, String patternCode, String value) {
         this.id = id;
+        this.nodeName = nodeName;
         this.patternCode = patternCode;
-        this.patternValue = patternValue;
         this.value = value;
     }
 
@@ -17,12 +17,12 @@ public class PhoneDto {
         return id;
     }
 
-    public String getPatternCode() {
-        return patternCode;
+    public String getNodeName() {
+        return nodeName;
     }
 
-    public String getPatternValue() {
-        return patternValue;
+    public String getPatternCode() {
+        return patternCode;
     }
 
     public String getValue() {

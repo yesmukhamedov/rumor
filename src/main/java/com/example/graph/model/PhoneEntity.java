@@ -25,9 +25,14 @@ public class PhoneEntity {
     @JoinColumn(name = "pattern_id", nullable = false)
     private PhonePatternEntity pattern;
 
+    @NotNull
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "node_id", nullable = false)
+    private NodeEntity node;
+
     @NotBlank
-    @Size(max = 32)
-    @Column(nullable = false, length = 32)
+    @Size(max = 64)
+    @Column(nullable = false, length = 64)
     private String value;
 
     public Long getId() {
@@ -40,6 +45,14 @@ public class PhoneEntity {
 
     public void setPattern(PhonePatternEntity pattern) {
         this.pattern = pattern;
+    }
+
+    public NodeEntity getNode() {
+        return node;
+    }
+
+    public void setNode(NodeEntity node) {
+        this.node = node;
     }
 
     public String getValue() {

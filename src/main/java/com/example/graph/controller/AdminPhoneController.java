@@ -1,5 +1,6 @@
 package com.example.graph.controller;
 
+import com.example.graph.service.NodeService;
 import com.example.graph.service.PhoneService;
 import com.example.graph.web.PhoneForm;
 import jakarta.validation.Valid;
@@ -17,15 +18,18 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/admin/phones")
 public class AdminPhoneController {
     private final PhoneService phoneService;
+    private final NodeService nodeService;
 
-    public AdminPhoneController(PhoneService phoneService) {
+    public AdminPhoneController(PhoneService phoneService, NodeService nodeService) {
         this.phoneService = phoneService;
+        this.nodeService = nodeService;
     }
 
     @GetMapping
     public String phones(Model model) {
         model.addAttribute("phones", phoneService.listPhonesDto());
         model.addAttribute("patterns", phoneService.listPatternsDto());
+        model.addAttribute("availableNodes", nodeService.listNodesWithoutPhoneDto());
         if (!model.containsAttribute("phoneForm")) {
             model.addAttribute("phoneForm", new PhoneForm());
         }
@@ -41,7 +45,7 @@ public class AdminPhoneController {
             return "redirect:/admin/phones";
         }
         try {
-            phoneService.createPhone(phoneForm.getPatternId(), phoneForm.getValue());
+            phoneService.createPhone(phoneForm.getNodeId(), phoneForm.getPatternId(), phoneForm.getValue());
             redirectAttributes.addFlashAttribute("success", "Phone created.");
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());
