@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    container_name: graph-postgres
+    environment:
+      POSTGRES_DB: graphdb
+      POSTGRES_USER: graph
+      POSTGRES_PASSWORD: graph
+    ports:
+      - "5432:5432"
+    volumes:
+      - graphdb_data:/var/lib/postgresql/data
+volumes:
+  graphdb_data:

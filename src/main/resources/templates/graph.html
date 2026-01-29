@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Graph Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 2rem; }
+        th, td { border: 1px solid #ddd; padding: 0.5rem; }
+        th { background-color: #f5f5f5; text-align: left; }
+        .message { padding: 0.75rem; margin-bottom: 1rem; border-radius: 4px; }
+        .message.success { background-color: #e7f6e7; color: #1e5c1e; }
+        .message.error { background-color: #fdecea; color: #9b1c1c; }
+        form.inline { display: inline; }
+        .form-row { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+        .form-row label { min-width: 120px; }
+    </style>
+</head>
+<body>
+<h1>Graph Manager</h1>
+
+<div th:if="${success}" class="message success" th:text="${success}"></div>
+<div th:if="${error}" class="message error" th:text="${error}"></div>
+
+<section>
+    <h2>Add Node</h2>
+    <form th:action="@{/nodes}" method="post" th:object="${nodeForm}">
+        <div class="form-row">
+            <label for="name">Name</label>
+            <input id="name" type="text" th:field="*{name}" maxlength="100" required />
+            <button type="submit">Create Node</button>
+        </div>
+    </form>
+</section>
+
+<section>
+    <h2>Nodes</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${#lists.isEmpty(nodes)}">
+            <td colspan="3">No nodes yet.</td>
+        </tr>
+        <tr th:each="node : ${nodes}">
+            <td th:text="${node.id}"></td>
+            <td th:text="${node.name}"></td>
+            <td>
+                <form class="inline" th:action="@{/nodes/{id}/delete(id=${node.id})}" method="post">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+
+<section>
+    <h2>Add Edge</h2>
+    <form th:action="@{/edges}" method="post" th:object="${edgeForm}">
+        <div class="form-row">
+            <label for="fromId">From</label>
+            <select id="fromId" th:field="*{fromId}" required>
+                <option value="" disabled selected>Select node</option>
+                <option th:each="node : ${nodes}" th:value="${node.id}" th:text="${node.name}"></option>
+            </select>
+            <label for="toId">To</label>
+            <select id="toId" th:field="*{toId}" required>
+                <option value="" disabled selected>Select node</option>
+                <option th:each="node : ${nodes}" th:value="${node.id}" th:text="${node.name}"></option>
+            </select>
+            <button type="submit">Create Edge</button>
+        </div>
+    </form>
+</section>
+
+<section>
+    <h2>Edges</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${#lists.isEmpty(edges)}">
+            <td colspan="4">No edges yet.</td>
+        </tr>
+        <tr th:each="edge : ${edges}">
+            <td th:text="${edge.id}"></td>
+            <td th:text="${edge.fromNode.name}"></td>
+            <td th:text="${edge.toNode.name}"></td>
+            <td>
+                <form class="inline" th:action="@{/edges/{id}/delete(id=${edge.id})}" method="post">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</section>
+
+</body>
+</html>
