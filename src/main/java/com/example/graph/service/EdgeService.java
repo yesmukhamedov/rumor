@@ -30,20 +30,23 @@ public class EdgeService {
 
     public EdgeEntity createEdge(Long fromId, Long toId, Long labelId, String newLabel,
                                  LocalDateTime createdAt, LocalDateTime expiredAt) {
-        if (toId == null) {
-            throw new IllegalArgumentException("To node is required.");
+        if (fromId == null && toId == null) {
+            throw new IllegalArgumentException("Edge cannot be both PUBLIC and PRIVATE.");
+        }
+        if (fromId != null && toId != null && fromId.equals(toId)) {
+            throw new IllegalArgumentException("Self-loops are not allowed.");
         }
         NodeEntity fromNode = null;
         if (fromId != null) {
-            if (fromId.equals(toId)) {
-                throw new IllegalArgumentException("Self-loops are not allowed.");
-            }
             fromNode = nodeRepository.findById(fromId)
                 .orElseThrow(() -> new IllegalArgumentException("From node not found."));
         }
-        NodeEntity toNode = nodeRepository.findById(toId)
-            .orElseThrow(() -> new IllegalArgumentException("To node not found."));
-        if (fromId != null && edgeRepository.existsByFromNodeIdAndToNodeId(fromId, toId)) {
+        NodeEntity toNode = null;
+        if (toId != null) {
+            toNode = nodeRepository.findById(toId)
+                .orElseThrow(() -> new IllegalArgumentException("To node not found."));
+        }
+        if (fromId != null && toId != null && edgeRepository.existsByFromNodeIdAndToNodeId(fromId, toId)) {
             throw new IllegalArgumentException("That edge already exists.");
         }
         OffsetDateTime createdAtOffset = toOffsetDateTime(createdAt);
@@ -128,12 +131,12 @@ public class EdgeService {
         return new EdgeDto(
             edge.getId(),
             fromNode == null ? null : fromNode.getId(),
-            toNode.getId(),
+            toNode == null ? null : toNode.getId(),
             edge.getValue() == null ? null : edge.getValue().getText(),
             edge.getCreatedAt(),
             edge.getExpiredAt(),
             fromNode == null ? null : fromNode.getValue().getText(),
-            toNode.getValue().getText()
+            toNode == null ? null : toNode.getValue().getText()
         );
     }
 }

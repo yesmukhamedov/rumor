@@ -1,12 +1,9 @@
 package com.example.graph.web;
 
-import jakarta.validation.constraints.NotNull;
-
 public class EdgeForm {
     private String fromId;
 
-    @NotNull(message = "To node is required.")
-    private Long toId;
+    private String toId;
 
     private Long labelId;
 
@@ -24,11 +21,11 @@ public class EdgeForm {
         this.fromId = fromId;
     }
 
-    public Long getToId() {
+    public String getToId() {
         return toId;
     }
 
-    public void setToId(Long toId) {
+    public void setToId(String toId) {
         this.toId = toId;
     }
 

@@ -10,7 +10,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 
 @Entity
@@ -31,9 +30,8 @@ public class EdgeEntity {
     @JoinColumn(name = "from_id", nullable = true)
     private NodeEntity fromNode;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "to_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "to_id", nullable = true)
     private NodeEntity toNode;
 
     @Column(name = "created_at")
