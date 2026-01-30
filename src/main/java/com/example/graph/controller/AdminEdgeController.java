@@ -68,7 +68,7 @@ public class AdminEdgeController {
             Long toId = parseToId(toValue);
             LocalDateTime createdAt = parseDateTime(edgeForm.getCreatedAt());
             LocalDateTime expiredAt = parseDateTime(edgeForm.getExpiredAt());
-            edgeService.createEdge(fromId, toId, edgeForm.getLabelId(), edgeForm.getNewLabel(),
+            edgeService.createEdge(fromId, toId, edgeForm.getLabelValue(), edgeForm.getNewLabel(),
                 createdAt, expiredAt);
             redirectAttributes.addFlashAttribute("success", "Edge created.");
         } catch (NumberFormatException ex) {

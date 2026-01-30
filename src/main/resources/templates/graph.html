@@ -79,10 +79,10 @@
             </select>
         </div>
         <div class="form-row">
-            <label for="labelId">Label (reuse)</label>
-            <select id="labelId" th:field="*{labelId}">
+            <label for="labelValue">Label (reuse)</label>
+            <select id="labelValue" th:field="*{labelValue}">
                 <option value="" selected>-- no label --</option>
-                <option th:each="label : ${publicEdgeValues}" th:value="${label.id}" th:text="${label.text}"></option>
+                <option th:each="label : ${publicEdgeValues}" th:value="${label}" th:text="${label}"></option>
             </select>
             <label for="newLabel">New label (create)</label>
             <input id="newLabel" type="text" th:field="*{newLabel}" maxlength="200"

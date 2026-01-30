@@ -9,26 +9,25 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(
-    name = "edges",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"from_id", "to_id"})
-)
-public class EdgeEntity {
+@Table(name = "phone_values")
+public class PhoneValueEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "from_id", nullable = true)
-    private NodeEntity fromNode;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "phone_id", nullable = false)
+    private PhoneEntity phone;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "to_id", nullable = true)
-    private NodeEntity toNode;
+    @NotBlank
+    @Size(max = 32)
+    @Column(nullable = false, length = 32)
+    private String value;
 
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
@@ -36,24 +35,27 @@ public class EdgeEntity {
     @Column(name = "expired_at")
     private OffsetDateTime expiredAt;
 
+    @Column(name = "created_by", length = 100)
+    private String createdBy;
+
     public Long getId() {
         return id;
     }
 
-    public NodeEntity getFromNode() {
-        return fromNode;
+    public PhoneEntity getPhone() {
+        return phone;
     }
 
-    public void setFromNode(NodeEntity fromNode) {
-        this.fromNode = fromNode;
+    public void setPhone(PhoneEntity phone) {
+        this.phone = phone;
     }
 
-    public NodeEntity getToNode() {
-        return toNode;
+    public String getValue() {
+        return value;
     }
 
-    public void setToNode(NodeEntity toNode) {
-        this.toNode = toNode;
+    public void setValue(String value) {
+        this.value = value;
     }
 
     public OffsetDateTime getCreatedAt() {
@@ -70,5 +72,13 @@ public class EdgeEntity {
 
     public void setExpiredAt(OffsetDateTime expiredAt) {
         this.expiredAt = expiredAt;
+    }
+
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
     }
 }

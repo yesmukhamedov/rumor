@@ -27,11 +27,6 @@ public class PhoneEntity {
     @JoinColumn(name = "node_id", nullable = false)
     private NodeEntity node;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "value_id", nullable = false)
-    private ValueEntity value;
-
     public Long getId() {
         return id;
     }
@@ -50,13 +45,5 @@ public class PhoneEntity {
 
     public void setNode(NodeEntity node) {
         this.node = node;
-    }
-
-    public ValueEntity getValue() {
-        return value;
-    }
-
-    public void setValue(ValueEntity value) {
-        this.value = value;
     }
 }
