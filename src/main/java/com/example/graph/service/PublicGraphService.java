@@ -32,6 +32,7 @@ import com.example.graph.web.form.NodePublicForm;
 import com.example.graph.web.form.PhonePublicForm;
 import com.example.graph.web.form.EdgeValueForm;
 import com.example.graph.web.form.NodeValueForm;
+import com.example.graph.snapshot.TimeSlice;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -93,8 +94,8 @@ public class PublicGraphService {
     }
 
     @Transactional(readOnly = true)
-    public GraphSnapshot loadGraph(Long nodeId, String atRequested, OffsetDateTime atResolved) {
-        OffsetDateTime resolved = atResolved == null ? OffsetDateTime.now(ZoneOffset.UTC) : atResolved;
+    public GraphSnapshot loadGraph(Long nodeId, TimeSlice timeSlice) {
+        OffsetDateTime resolved = timeSlice.resolvedAt();
         List<EdgeEntity> edges = loadEdges(nodeId);
         List<NodeEntity> nodes = loadNodes(nodeId, edges);
         Set<Long> nodeIds = nodes.stream().map(NodeEntity::getId).collect(Collectors.toSet());
@@ -108,9 +109,7 @@ public class PublicGraphService {
             nodeValueService.getCurrentValues(resolved),
             edgeValueService.getCurrentValueEntities(resolved),
             phoneValueService.getCurrentValues(resolved),
-            atRequested,
-            resolved,
-            "UTC",
+            timeSlice,
             nodeId,
             scope,
             hops

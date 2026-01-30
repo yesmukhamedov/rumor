@@ -85,7 +85,7 @@ public class JsonLdConverter {
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("nodeId", snapshot.getFocusNodeId());
         meta.put("at", toIsoString(snapshot.getAtResolved()));
-        meta.put("atRequested", snapshot.getAtRequested());
+        meta.put("atRequested", toIsoString(snapshot.getAtRequested()));
         meta.put("atResolved", toIsoString(snapshot.getAtResolved()));
         meta.put("timezone", snapshot.getTimezone());
         meta.put("scope", snapshot.getScope());

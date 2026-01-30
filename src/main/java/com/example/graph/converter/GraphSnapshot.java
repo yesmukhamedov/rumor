@@ -5,6 +5,7 @@ import com.example.graph.model.NodeEntity;
 import com.example.graph.model.phone.PhoneEntity;
 import com.example.graph.model.phone.PhoneValueEntity;
 import com.example.graph.model.value.EdgeValueEntity;
+import com.example.graph.snapshot.TimeSlice;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -16,9 +17,7 @@ public class GraphSnapshot {
     private final Map<Long, String> nodeValues;
     private final Map<Long, EdgeValueEntity> edgeValues;
     private final Map<Long, PhoneValueEntity> phoneValues;
-    private final String atRequested;
-    private final OffsetDateTime atResolved;
-    private final String timezone;
+    private final TimeSlice timeSlice;
     private final Long focusNodeId;
     private final String scope;
     private final int hops;
@@ -29,9 +28,7 @@ public class GraphSnapshot {
                          Map<Long, String> nodeValues,
                          Map<Long, EdgeValueEntity> edgeValues,
                          Map<Long, PhoneValueEntity> phoneValues,
-                         String atRequested,
-                         OffsetDateTime atResolved,
-                         String timezone,
+                         TimeSlice timeSlice,
                          Long focusNodeId,
                          String scope,
                          int hops) {
@@ -41,9 +38,7 @@ public class GraphSnapshot {
         this.nodeValues = nodeValues;
         this.edgeValues = edgeValues;
         this.phoneValues = phoneValues;
-        this.atRequested = atRequested;
-        this.atResolved = atResolved;
-        this.timezone = timezone;
+        this.timeSlice = timeSlice;
         this.focusNodeId = focusNodeId;
         this.scope = scope;
         this.hops = hops;
@@ -73,16 +68,20 @@ public class GraphSnapshot {
         return phoneValues;
     }
 
-    public String getAtRequested() {
-        return atRequested;
+    public OffsetDateTime getAtRequested() {
+        return timeSlice.requestedAt();
     }
 
     public OffsetDateTime getAtResolved() {
-        return atResolved;
+        return timeSlice.resolvedAt();
     }
 
     public String getTimezone() {
-        return timezone;
+        return timeSlice.timezone();
+    }
+
+    public TimeSlice getTimeSlice() {
+        return timeSlice;
     }
 
     public Long getFocusNodeId() {

@@ -4,6 +4,7 @@ import com.example.graph.converter.GraphSnapshot;
 import com.example.graph.converter.JsonLdConverter;
 import com.example.graph.converter.JsonLdDocument;
 import com.example.graph.service.PublicGraphService;
+import com.example.graph.snapshot.TimeSlice;
 import com.example.graph.validate.ValidationException;
 import com.example.graph.web.PublicGraphPostRequest;
 import com.example.graph.web.PublicValuesPatchRequest;
@@ -60,8 +61,10 @@ public class PublicController {
         @Parameter(description = "Optional ISO-8601 datetime with offset or Z")
         @RequestParam(name = "at", required = false) String atParam) {
         Long nodeId = parseLong(nodeIdParam, "nodeId");
-        TimeSlice timeSlice = resolveTimeSlice(atParam);
-        GraphSnapshot snapshot = publicGraphService.loadGraph(nodeId, timeSlice.requested(), timeSlice.resolved());
+        OffsetDateTime requestedAt = parseAt(atParam);
+        OffsetDateTime resolvedAt = requestedAt != null ? requestedAt : OffsetDateTime.now(ZoneOffset.UTC);
+        TimeSlice timeSlice = new TimeSlice(requestedAt, resolvedAt, "UTC");
+        GraphSnapshot snapshot = publicGraphService.loadGraph(nodeId, timeSlice);
         return ResponseEntity
             .ok()
             .contentType(MediaType.valueOf("application/ld+json"))
@@ -84,7 +87,8 @@ public class PublicController {
     public ResponseEntity<JsonLdDocument> postGraph(@RequestBody PublicGraphPostRequest request) {
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         publicGraphService.applyGraph(request, now);
-        GraphSnapshot snapshot = publicGraphService.loadGraph(null, null, now);
+        TimeSlice timeSlice = new TimeSlice(null, now, "UTC");
+        GraphSnapshot snapshot = publicGraphService.loadGraph(null, timeSlice);
         return ResponseEntity
             .ok()
             .contentType(MediaType.valueOf("application/ld+json"))
@@ -107,7 +111,8 @@ public class PublicController {
     public ResponseEntity<JsonLdDocument> patchValues(@RequestBody PublicValuesPatchRequest request) {
         publicGraphService.applyValuesPatch(request);
         OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-        GraphSnapshot snapshot = publicGraphService.loadGraph(null, null, now);
+        TimeSlice timeSlice = new TimeSlice(null, now, "UTC");
+        GraphSnapshot snapshot = publicGraphService.loadGraph(null, timeSlice);
         return ResponseEntity
             .ok()
             .contentType(MediaType.valueOf("application/ld+json"))
@@ -126,15 +131,13 @@ public class PublicController {
         }
     }
 
-    private TimeSlice resolveTimeSlice(String requestedAt) {
+    private OffsetDateTime parseAt(String requestedAt) {
         if (requestedAt == null || requestedAt.isBlank()) {
-            return new TimeSlice(null, OffsetDateTime.now(ZoneOffset.UTC));
+            return null;
         }
-        String raw = requestedAt;
         String trimmed = requestedAt.trim();
         try {
-            OffsetDateTime parsed = OffsetDateTime.parse(trimmed);
-            return new TimeSlice(raw, parsed.withOffsetSameInstant(ZoneOffset.UTC));
+            return OffsetDateTime.parse(trimmed).withOffsetSameInstant(ZoneOffset.UTC);
         } catch (DateTimeParseException ex) {
             if (LOCAL_DATETIME_PATTERN.matcher(trimmed).matches()) {
                 throw new ValidationException("Datetime must include offset.",
@@ -144,8 +147,5 @@ public class PublicController {
             throw new ValidationException("Invalid datetime format.",
                 List.of(new com.example.graph.web.problem.ProblemFieldError("at", "Invalid datetime format.")));
         }
-    }
-
-    private record TimeSlice(String requested, OffsetDateTime resolved) {
     }
 }
