@@ -15,7 +15,9 @@ public class GraphSnapshot {
     private final Map<Long, String> nodeValues;
     private final Map<Long, String> edgeValues;
     private final Map<Long, PhoneValueEntity> phoneValues;
-    private final OffsetDateTime atTime;
+    private final OffsetDateTime at;
+    private final Long focusNodeId;
+    private final String scope;
 
     public GraphSnapshot(List<NodeEntity> nodes,
                          List<EdgeEntity> edges,
@@ -23,14 +25,18 @@ public class GraphSnapshot {
                          Map<Long, String> nodeValues,
                          Map<Long, String> edgeValues,
                          Map<Long, PhoneValueEntity> phoneValues,
-                         OffsetDateTime atTime) {
+                         OffsetDateTime at,
+                         Long focusNodeId,
+                         String scope) {
         this.nodes = nodes;
         this.edges = edges;
         this.phones = phones;
         this.nodeValues = nodeValues;
         this.edgeValues = edgeValues;
         this.phoneValues = phoneValues;
-        this.atTime = atTime;
+        this.at = at;
+        this.focusNodeId = focusNodeId;
+        this.scope = scope;
     }
 
     public List<NodeEntity> getNodes() {
@@ -57,7 +63,19 @@ public class GraphSnapshot {
         return phoneValues;
     }
 
+    public OffsetDateTime getAt() {
+        return at;
+    }
+
     public OffsetDateTime getAtTime() {
-        return atTime;
+        return at;
+    }
+
+    public Long getFocusNodeId() {
+        return focusNodeId;
+    }
+
+    public String getScope() {
+        return scope;
     }
 }

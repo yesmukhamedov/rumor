@@ -2,6 +2,7 @@ package com.example.graph.controller;
 
 import com.example.graph.converter.GraphSnapshot;
 import com.example.graph.converter.JsonLdConverter;
+import com.example.graph.converter.JsonLdDocument;
 import com.example.graph.service.PublicGraphService;
 import com.example.graph.validate.EdgePublicValidator;
 import com.example.graph.validate.NodePublicValidator;
@@ -48,16 +49,19 @@ public class PublicController {
         this.jsonLdConverter = jsonLdConverter;
     }
 
-    @GetMapping("/graph")
-    public ResponseEntity<Map<String, Object>> getGraph(@RequestParam Map<String, String> params) {
+    @GetMapping(value = "/graph", produces = "application/ld+json")
+    public ResponseEntity<JsonLdDocument> getGraph(@RequestParam Map<String, String> params) {
         Long nodeId = parseLong(params.get("nodeId"), "nodeId");
         OffsetDateTime at = parseOffsetDateTime(params.get("at"));
         GraphSnapshot snapshot = publicGraphService.loadGraph(nodeId, at);
-        return ResponseEntity.ok(jsonLdConverter.toJsonLd(snapshot));
+        return ResponseEntity
+            .ok()
+            .contentType(MediaType.valueOf("application/ld+json"))
+            .body(jsonLdConverter.toJsonLd(snapshot));
     }
 
-    @PostMapping(path = "/graph", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Map<String, Object>> postGraph(@RequestBody PublicGraphPostRequest request) {
+    @PostMapping(path = "/graph", produces = "application/ld+json", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JsonLdDocument> postGraph(@RequestBody PublicGraphPostRequest request) {
         List<NodePublicForm> nodes = request.getNodes() == null ? List.of() : request.getNodes();
         List<EdgePublicForm> edges = request.getEdges() == null ? List.of() : request.getEdges();
         List<PhonePublicForm> phones = request.getPhones() == null ? List.of() : request.getPhones();
@@ -73,11 +77,14 @@ public class PublicController {
         }
         publicGraphService.applyGraph(request, now);
         GraphSnapshot snapshot = publicGraphService.loadGraph(null, null);
-        return ResponseEntity.ok(jsonLdConverter.toJsonLd(snapshot));
+        return ResponseEntity
+            .ok()
+            .contentType(MediaType.valueOf("application/ld+json"))
+            .body(jsonLdConverter.toJsonLd(snapshot));
     }
 
-    @PatchMapping(path = "/values", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Map<String, Object>> patchValues(@RequestBody PublicValuesPatchRequest request) {
+    @PatchMapping(path = "/values", produces = "application/ld+json", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JsonLdDocument> patchValues(@RequestBody PublicValuesPatchRequest request) {
         if (request.getNodeValue() != null) {
             nodePublicValidator.validate(request.getNodeValue());
         }
@@ -86,7 +93,10 @@ public class PublicController {
         }
         publicGraphService.applyValuesPatch(request);
         GraphSnapshot snapshot = publicGraphService.loadGraph(null, null);
-        return ResponseEntity.ok(jsonLdConverter.toJsonLd(snapshot));
+        return ResponseEntity
+            .ok()
+            .contentType(MediaType.valueOf("application/ld+json"))
+            .body(jsonLdConverter.toJsonLd(snapshot));
     }
 
     @ExceptionHandler(ValidationException.class)

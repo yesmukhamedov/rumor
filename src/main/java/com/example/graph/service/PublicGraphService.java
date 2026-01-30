@@ -83,6 +83,7 @@ public class PublicGraphService {
         List<NodeEntity> nodes = loadNodes(nodeId, edges);
         Set<Long> nodeIds = nodes.stream().map(NodeEntity::getId).collect(Collectors.toSet());
         List<PhoneEntity> phones = loadPhones(nodeId, nodeIds);
+        String scope = nodeId == null ? "FULL" : "1-hop";
         return new GraphSnapshot(
             nodes,
             edges,
@@ -90,7 +91,9 @@ public class PublicGraphService {
             nodeValueService.getCurrentValues(now),
             edgeValueService.getCurrentValues(now),
             phoneValueService.getCurrentValues(now),
-            now
+            now,
+            nodeId,
+            scope
         );
     }
 
