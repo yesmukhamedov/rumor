@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 public class NodeValueForm {
     private Long nodeId;
     private String value;
+    private String body;
     private OffsetDateTime effectiveAt;
-    private String createdBy;
 }

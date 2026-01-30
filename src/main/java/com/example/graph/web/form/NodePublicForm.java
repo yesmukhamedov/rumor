@@ -9,6 +9,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class NodePublicForm {
     private Long id;
-    private String value;
-    private String createdBy;
+    private NodeValueForm value;
 }

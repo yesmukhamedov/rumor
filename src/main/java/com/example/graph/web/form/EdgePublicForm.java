@@ -12,8 +12,7 @@ public class EdgePublicForm {
     private Long id;
     private Long fromNodeId;
     private Long toNodeId;
-    private String value;
+    private EdgeValueForm value;
     private OffsetDateTime createdAt;
     private OffsetDateTime expiredAt;
-    private String createdBy;
 }

@@ -43,16 +43,8 @@ public class PhonePublicConverter {
         PhoneValueEntity value = new PhoneValueEntity();
         value.setPhone(phone);
         value.setPattern(pattern);
-        value.setValue(form.getDigits().trim());
+        value.setValue(form.getValue().trim());
         value.setCreatedAt(now);
-        value.setCreatedBy(normalize(form.getCreatedBy()));
         return value;
-    }
-
-    private String normalize(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim();
     }
 }

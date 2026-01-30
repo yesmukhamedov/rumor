@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 public class EdgeValueForm {
     private Long edgeId;
     private String value;
+    private String body;
     private OffsetDateTime effectiveAt;
-    private String createdBy;
 }

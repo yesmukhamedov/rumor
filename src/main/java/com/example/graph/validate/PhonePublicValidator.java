@@ -35,10 +35,10 @@ public class PhonePublicValidator {
         if (form.getPatternId() == null) {
             throw new ValidationException("Pattern is required.");
         }
-        if (form.getDigits() == null || form.getDigits().isBlank()) {
+        if (form.getValue() == null || form.getValue().isBlank()) {
             throw new ValidationException("Digits are required.");
         }
-        if (form.getDigits().trim().length() > MAX_VALUE_LENGTH) {
+        if (form.getValue().trim().length() > MAX_VALUE_LENGTH) {
             throw new ValidationException("Digits must be at most 32 characters.");
         }
         if (!nodeRepository.existsById(form.getNodeId())) {
@@ -46,8 +46,8 @@ public class PhonePublicValidator {
         }
         var pattern = phonePatternRepository.findById(form.getPatternId())
             .orElseThrow(() -> new ValidationException("Pattern not found."));
-        phoneDigitsValidator.validateDigitsAgainstPattern(form.getDigits().trim(), pattern);
-        if (phoneValueRepository.existsByValue(form.getDigits().trim())) {
+        phoneDigitsValidator.validateDigitsAgainstPattern(form.getValue().trim(), pattern);
+        if (phoneValueRepository.existsByValue(form.getValue().trim())) {
             throw new ValidationException("Phone value already exists.");
         }
     }

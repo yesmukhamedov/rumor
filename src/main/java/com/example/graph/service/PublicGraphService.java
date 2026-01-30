@@ -22,10 +22,10 @@ import com.example.graph.service.value.NodeValueService;
 import com.example.graph.web.PublicGraphPostRequest;
 import com.example.graph.web.PublicValuesPatchRequest;
 import com.example.graph.web.form.EdgePublicForm;
-import com.example.graph.web.form.EdgeValueForm;
 import com.example.graph.web.form.NodePublicForm;
-import com.example.graph.web.form.NodeValueForm;
 import com.example.graph.web.form.PhonePublicForm;
+import com.example.graph.web.form.EdgeValueForm;
+import com.example.graph.web.form.NodeValueForm;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -102,14 +102,18 @@ public class PublicGraphService {
 
         for (NodePublicForm form : nodes) {
             NodeEntity node = nodePublicConverter.toEntity(form);
-            NodeValueEntity value = nodePublicConverter.toValueEntity(node, form, now);
-            nodeValueRepository.save(value);
+            if (form.getValue() != null) {
+                NodeValueEntity value = nodePublicConverter.toValueEntity(node, form.getValue(), now);
+                nodeValueRepository.save(value);
+            }
         }
 
         for (EdgePublicForm form : edges) {
             EdgeEntity edge = edgePublicConverter.toEntity(form);
-            if (form.getValue() != null && !form.getValue().isBlank()) {
-                updateEdgeValue(edge, edgePublicConverter.toValueEntity(edge, form, now), now);
+            if (form.getValue() != null) {
+                EdgeValueEntity value = edgePublicConverter.toValueEntity(edge, form.getValue(), now);
+                OffsetDateTime effectiveAt = value.getCreatedAt() == null ? now : value.getCreatedAt();
+                updateEdgeValue(edge, value, effectiveAt);
             }
         }
 
@@ -121,11 +125,12 @@ public class PublicGraphService {
 
     @Transactional
     public void applyValuesPatch(PublicValuesPatchRequest request) {
+        OffsetDateTime now = OffsetDateTime.now();
         if (request.getNodeValue() != null) {
-            applyNodeValueUpdate(request.getNodeValue());
+            applyNodeValueUpdate(request.getNodeValue(), now);
         }
         if (request.getEdgeValue() != null) {
-            applyEdgeValueUpdate(request.getEdgeValue());
+            applyEdgeValueUpdate(request.getEdgeValue(), now);
         }
     }
 
@@ -188,8 +193,8 @@ public class PublicGraphService {
         phoneValueRepository.save(next);
     }
 
-    private void applyNodeValueUpdate(NodeValueForm form) {
-        OffsetDateTime effectiveAt = form.getEffectiveAt() == null ? OffsetDateTime.now() : form.getEffectiveAt();
+    private void applyNodeValueUpdate(NodeValueForm form, OffsetDateTime now) {
+        OffsetDateTime effectiveAt = form.getEffectiveAt() == null ? now : form.getEffectiveAt();
         NodeEntity node = nodeRepository.findById(form.getNodeId())
             .orElseThrow(() -> new IllegalArgumentException("Node not found."));
         NodeValueEntity current = nodeValueRepository.findCurrentValueByNodeId(node.getId(), effectiveAt)
@@ -198,16 +203,12 @@ public class PublicGraphService {
             current.setExpiredAt(effectiveAt);
             nodeValueRepository.save(current);
         }
-        NodeValueEntity next = new NodeValueEntity();
-        next.setNode(node);
-        next.setValue(form.getValue().trim());
-        next.setCreatedAt(effectiveAt);
-        next.setCreatedBy(normalize(form.getCreatedBy()));
+        NodeValueEntity next = nodePublicConverter.toValueEntity(node, form, effectiveAt);
         nodeValueRepository.save(next);
     }
 
-    private void applyEdgeValueUpdate(EdgeValueForm form) {
-        OffsetDateTime effectiveAt = form.getEffectiveAt() == null ? OffsetDateTime.now() : form.getEffectiveAt();
+    private void applyEdgeValueUpdate(EdgeValueForm form, OffsetDateTime now) {
+        OffsetDateTime effectiveAt = form.getEffectiveAt() == null ? now : form.getEffectiveAt();
         EdgeEntity edge = edgeRepository.findById(form.getEdgeId())
             .orElseThrow(() -> new IllegalArgumentException("Edge not found."));
         EdgeValueEntity current = edgeValueRepository.findCurrentValueByEdgeId(edge.getId(), effectiveAt)
@@ -216,18 +217,7 @@ public class PublicGraphService {
             current.setExpiredAt(effectiveAt);
             edgeValueRepository.save(current);
         }
-        EdgeValueEntity next = new EdgeValueEntity();
-        next.setEdge(edge);
-        next.setValue(form.getValue().trim());
-        next.setCreatedAt(effectiveAt);
-        next.setCreatedBy(normalize(form.getCreatedBy()));
+        EdgeValueEntity next = edgePublicConverter.toValueEntity(edge, form, effectiveAt);
         edgeValueRepository.save(next);
-    }
-
-    private String normalize(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim();
     }
 }

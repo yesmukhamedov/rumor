@@ -10,7 +10,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
@@ -36,9 +35,8 @@ public class EdgeValueEntity {
     @JoinColumn(name = "edge_id", nullable = false)
     private EdgeEntity edge;
 
-    @NotBlank
     @Size(max = 200)
-    @Column(nullable = false, length = 200)
+    @Column(length = 200)
     private String value;
 
     @Column(name = "body", columnDefinition = "text")

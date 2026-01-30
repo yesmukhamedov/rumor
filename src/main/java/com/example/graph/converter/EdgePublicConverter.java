@@ -7,6 +7,7 @@ import com.example.graph.repository.EdgeRepository;
 import com.example.graph.repository.NodeRepository;
 import com.example.graph.validate.ValidationException;
 import com.example.graph.web.form.EdgePublicForm;
+import com.example.graph.web.form.EdgeValueForm;
 import java.time.OffsetDateTime;
 import org.springframework.stereotype.Component;
 
@@ -38,12 +39,14 @@ public class EdgePublicConverter {
         return edgeRepository.save(edge);
     }
 
-    public EdgeValueEntity toValueEntity(EdgeEntity edge, EdgePublicForm form, OffsetDateTime now) {
+    public EdgeValueEntity toValueEntity(EdgeEntity edge, EdgeValueForm form, OffsetDateTime now) {
         EdgeValueEntity value = new EdgeValueEntity();
         value.setEdge(edge);
-        value.setValue(form.getValue().trim());
-        value.setCreatedAt(now);
-        value.setCreatedBy(normalize(form.getCreatedBy()));
+        if (form.getValue() != null) {
+            value.setValue(form.getValue().trim());
+        }
+        value.setBody(normalize(form.getBody()));
+        value.setCreatedAt(resolveEffectiveAt(form.getEffectiveAt(), now));
         return value;
     }
 
@@ -53,6 +56,10 @@ public class EdgePublicConverter {
         }
         return nodeRepository.findById(nodeId)
             .orElseThrow(() -> new ValidationException(message));
+    }
+
+    private OffsetDateTime resolveEffectiveAt(OffsetDateTime effectiveAt, OffsetDateTime fallback) {
+        return effectiveAt == null ? fallback : effectiveAt;
     }
 
     private String normalize(String value) {

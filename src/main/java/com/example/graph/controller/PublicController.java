@@ -6,7 +6,6 @@ import com.example.graph.service.PublicGraphService;
 import com.example.graph.validate.EdgePublicValidator;
 import com.example.graph.validate.NodePublicValidator;
 import com.example.graph.validate.PhonePublicValidator;
-import com.example.graph.validate.PublicValueValidator;
 import com.example.graph.validate.ValidationException;
 import com.example.graph.web.form.EdgePublicForm;
 import com.example.graph.web.form.NodePublicForm;
@@ -35,20 +34,17 @@ public class PublicController {
     private final NodePublicValidator nodePublicValidator;
     private final EdgePublicValidator edgePublicValidator;
     private final PhonePublicValidator phonePublicValidator;
-    private final PublicValueValidator publicValueValidator;
     private final JsonLdConverter jsonLdConverter;
 
     public PublicController(PublicGraphService publicGraphService,
                             NodePublicValidator nodePublicValidator,
                             EdgePublicValidator edgePublicValidator,
                             PhonePublicValidator phonePublicValidator,
-                            PublicValueValidator publicValueValidator,
                             JsonLdConverter jsonLdConverter) {
         this.publicGraphService = publicGraphService;
         this.nodePublicValidator = nodePublicValidator;
         this.edgePublicValidator = edgePublicValidator;
         this.phonePublicValidator = phonePublicValidator;
-        this.publicValueValidator = publicValueValidator;
         this.jsonLdConverter = jsonLdConverter;
     }
 
@@ -83,10 +79,10 @@ public class PublicController {
     @PatchMapping(path = "/values", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> patchValues(@RequestBody PublicValuesPatchRequest request) {
         if (request.getNodeValue() != null) {
-            publicValueValidator.validate(request.getNodeValue());
+            nodePublicValidator.validate(request.getNodeValue());
         }
         if (request.getEdgeValue() != null) {
-            publicValueValidator.validate(request.getEdgeValue());
+            edgePublicValidator.validate(request.getEdgeValue());
         }
         publicGraphService.applyValuesPatch(request);
         GraphSnapshot snapshot = publicGraphService.loadGraph(null, null);
