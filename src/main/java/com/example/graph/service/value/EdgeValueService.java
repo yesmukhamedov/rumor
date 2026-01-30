@@ -44,6 +44,12 @@ public class EdgeValueService {
     }
 
     @Transactional(readOnly = true)
+    public Map<Long, EdgeValueEntity> getCurrentValueEntities(OffsetDateTime now) {
+        return edgeValueRepository.findCurrentValues(now).stream()
+            .collect(Collectors.toMap(value -> value.getEdge().getId(), value -> value, (a, b) -> a));
+    }
+
+    @Transactional(readOnly = true)
     public List<String> getCurrentPublicValues(OffsetDateTime now) {
         return edgeValueRepository.findDistinctCurrentPublicValues(now);
     }

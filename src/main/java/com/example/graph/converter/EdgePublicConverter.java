@@ -5,6 +5,7 @@ import com.example.graph.model.NodeEntity;
 import com.example.graph.model.value.EdgeValueEntity;
 import com.example.graph.repository.EdgeRepository;
 import com.example.graph.repository.NodeRepository;
+import com.example.graph.util.HtmlSanitizer;
 import com.example.graph.validate.ValidationException;
 import com.example.graph.web.form.EdgePublicForm;
 import com.example.graph.web.form.EdgeValueForm;
@@ -15,10 +16,14 @@ import org.springframework.stereotype.Component;
 public class EdgePublicConverter {
     private final EdgeRepository edgeRepository;
     private final NodeRepository nodeRepository;
+    private final HtmlSanitizer htmlSanitizer;
 
-    public EdgePublicConverter(EdgeRepository edgeRepository, NodeRepository nodeRepository) {
+    public EdgePublicConverter(EdgeRepository edgeRepository,
+                               NodeRepository nodeRepository,
+                               HtmlSanitizer htmlSanitizer) {
         this.edgeRepository = edgeRepository;
         this.nodeRepository = nodeRepository;
+        this.htmlSanitizer = htmlSanitizer;
     }
 
     public EdgeEntity toEntity(EdgePublicForm form) {
@@ -42,10 +47,14 @@ public class EdgePublicConverter {
     public EdgeValueEntity toValueEntity(EdgeEntity edge, EdgeValueForm form, OffsetDateTime now) {
         EdgeValueEntity value = new EdgeValueEntity();
         value.setEdge(edge);
-        if (form.getValue() != null) {
-            value.setValue(form.getValue().trim());
+        String trimmedValue = form.getValue() == null ? null : form.getValue().trim();
+        String trimmedRelationType = form.getRelationType() == null ? null : form.getRelationType().trim();
+        if (trimmedValue != null && !trimmedValue.isBlank()) {
+            value.setValue(trimmedValue);
+        } else if (trimmedRelationType != null && !trimmedRelationType.isBlank()) {
+            value.setValue(trimmedRelationType);
         }
-        value.setBody(normalize(form.getBody()));
+        value.setBody(htmlSanitizer.sanitize(form.getBody()));
         value.setCreatedAt(resolveEffectiveAt(form.getEffectiveAt(), now));
         return value;
     }
@@ -62,10 +71,4 @@ public class EdgePublicConverter {
         return effectiveAt == null ? fallback : effectiveAt;
     }
 
-    private String normalize(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim();
-    }
 }

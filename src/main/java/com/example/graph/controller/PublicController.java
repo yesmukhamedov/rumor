@@ -4,22 +4,23 @@ import com.example.graph.converter.GraphSnapshot;
 import com.example.graph.converter.JsonLdConverter;
 import com.example.graph.converter.JsonLdDocument;
 import com.example.graph.service.PublicGraphService;
-import com.example.graph.validate.EdgePublicValidator;
-import com.example.graph.validate.NodePublicValidator;
-import com.example.graph.validate.PhonePublicValidator;
 import com.example.graph.validate.ValidationException;
-import com.example.graph.web.form.EdgePublicForm;
-import com.example.graph.web.form.NodePublicForm;
-import com.example.graph.web.form.PhonePublicForm;
 import com.example.graph.web.PublicGraphPostRequest;
 import com.example.graph.web.PublicValuesPatchRequest;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.Map;
+import java.util.regex.Pattern;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,30 +31,37 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(path = "/public", produces = "application/ld+json")
+@Tag(name = "Public Graph API")
 public class PublicController {
     private final PublicGraphService publicGraphService;
-    private final NodePublicValidator nodePublicValidator;
-    private final EdgePublicValidator edgePublicValidator;
-    private final PhonePublicValidator phonePublicValidator;
     private final JsonLdConverter jsonLdConverter;
+    private static final Pattern LOCAL_DATETIME_PATTERN = Pattern.compile(
+        "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2}(\\.\\d{1,9})?)?$");
 
     public PublicController(PublicGraphService publicGraphService,
-                            NodePublicValidator nodePublicValidator,
-                            EdgePublicValidator edgePublicValidator,
-                            PhonePublicValidator phonePublicValidator,
                             JsonLdConverter jsonLdConverter) {
         this.publicGraphService = publicGraphService;
-        this.nodePublicValidator = nodePublicValidator;
-        this.edgePublicValidator = edgePublicValidator;
-        this.phonePublicValidator = phonePublicValidator;
         this.jsonLdConverter = jsonLdConverter;
     }
 
     @GetMapping(value = "/graph", produces = "application/ld+json")
-    public ResponseEntity<JsonLdDocument> getGraph(@RequestParam Map<String, String> params) {
-        Long nodeId = parseLong(params.get("nodeId"), "nodeId");
-        OffsetDateTime at = parseOffsetDateTime(params.get("at"));
-        GraphSnapshot snapshot = publicGraphService.loadGraph(nodeId, at);
+    @Operation(summary = "Get the public graph snapshot")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "JSON-LD graph snapshot",
+            content = @Content(mediaType = "application/ld+json",
+                schema = @Schema(implementation = JsonLdDocument.class))),
+        @ApiResponse(responseCode = "400", description = "Validation error",
+            content = @Content(mediaType = "application/problem+json",
+                schema = @Schema(implementation = com.example.graph.web.problem.ProblemDetails.class)))
+    })
+    public ResponseEntity<JsonLdDocument> getGraph(
+        @Parameter(description = "Optional node id to scope to a 1-hop neighborhood")
+        @RequestParam(name = "nodeId", required = false) String nodeIdParam,
+        @Parameter(description = "Optional ISO-8601 datetime with offset or Z")
+        @RequestParam(name = "at", required = false) String atParam) {
+        Long nodeId = parseLong(nodeIdParam, "nodeId");
+        TimeSlice timeSlice = resolveTimeSlice(atParam);
+        GraphSnapshot snapshot = publicGraphService.loadGraph(nodeId, timeSlice.requested(), timeSlice.resolved());
         return ResponseEntity
             .ok()
             .contentType(MediaType.valueOf("application/ld+json"))
@@ -61,22 +69,22 @@ public class PublicController {
     }
 
     @PostMapping(path = "/graph", produces = "application/ld+json", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Apply a public graph update and return the new snapshot")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "JSON-LD graph snapshot",
+            content = @Content(mediaType = "application/ld+json",
+                schema = @Schema(implementation = JsonLdDocument.class))),
+        @ApiResponse(responseCode = "400", description = "Validation error",
+            content = @Content(mediaType = "application/problem+json",
+                schema = @Schema(implementation = com.example.graph.web.problem.ProblemDetails.class))),
+        @ApiResponse(responseCode = "409", description = "Conflict",
+            content = @Content(mediaType = "application/problem+json",
+                schema = @Schema(implementation = com.example.graph.web.problem.ProblemDetails.class)))
+    })
     public ResponseEntity<JsonLdDocument> postGraph(@RequestBody PublicGraphPostRequest request) {
-        List<NodePublicForm> nodes = request.getNodes() == null ? List.of() : request.getNodes();
-        List<EdgePublicForm> edges = request.getEdges() == null ? List.of() : request.getEdges();
-        List<PhonePublicForm> phones = request.getPhones() == null ? List.of() : request.getPhones();
-        OffsetDateTime now = OffsetDateTime.now();
-        for (NodePublicForm form : nodes) {
-            nodePublicValidator.validate(form);
-        }
-        for (EdgePublicForm form : edges) {
-            edgePublicValidator.validate(form);
-        }
-        for (PhonePublicForm form : phones) {
-            phonePublicValidator.validate(form);
-        }
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
         publicGraphService.applyGraph(request, now);
-        GraphSnapshot snapshot = publicGraphService.loadGraph(null, null);
+        GraphSnapshot snapshot = publicGraphService.loadGraph(null, null, now);
         return ResponseEntity
             .ok()
             .contentType(MediaType.valueOf("application/ld+json"))
@@ -84,33 +92,26 @@ public class PublicController {
     }
 
     @PatchMapping(path = "/values", produces = "application/ld+json", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Patch a node or edge value and return the new snapshot")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "JSON-LD graph snapshot",
+            content = @Content(mediaType = "application/ld+json",
+                schema = @Schema(implementation = JsonLdDocument.class))),
+        @ApiResponse(responseCode = "400", description = "Validation error",
+            content = @Content(mediaType = "application/problem+json",
+                schema = @Schema(implementation = com.example.graph.web.problem.ProblemDetails.class))),
+        @ApiResponse(responseCode = "409", description = "Conflict",
+            content = @Content(mediaType = "application/problem+json",
+                schema = @Schema(implementation = com.example.graph.web.problem.ProblemDetails.class)))
+    })
     public ResponseEntity<JsonLdDocument> patchValues(@RequestBody PublicValuesPatchRequest request) {
-        if (request.getNodeValue() != null) {
-            nodePublicValidator.validate(request.getNodeValue());
-        }
-        if (request.getEdgeValue() != null) {
-            edgePublicValidator.validate(request.getEdgeValue());
-        }
         publicGraphService.applyValuesPatch(request);
-        GraphSnapshot snapshot = publicGraphService.loadGraph(null, null);
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        GraphSnapshot snapshot = publicGraphService.loadGraph(null, null, now);
         return ResponseEntity
             .ok()
             .contentType(MediaType.valueOf("application/ld+json"))
             .body(jsonLdConverter.toJsonLd(snapshot));
-    }
-
-    @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<Map<String, String>> handleValidationException(ValidationException ex) {
-        Map<String, String> body = new HashMap<>();
-        body.put("error", ex.getMessage());
-        return ResponseEntity.badRequest().body(body);
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleBadRequest(IllegalArgumentException ex) {
-        Map<String, String> body = new HashMap<>();
-        body.put("error", ex.getMessage());
-        return ResponseEntity.badRequest().body(body);
     }
 
     private Long parseLong(String value, String field) {
@@ -120,19 +121,31 @@ public class PublicController {
         try {
             return Long.parseLong(value);
         } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException(field + " must be a number.");
+            throw new ValidationException(field + " must be a number.",
+                List.of(new com.example.graph.web.problem.ProblemFieldError(field, field + " must be a number.")));
         }
     }
 
-    private OffsetDateTime parseOffsetDateTime(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
+    private TimeSlice resolveTimeSlice(String requestedAt) {
+        if (requestedAt == null || requestedAt.isBlank()) {
+            return new TimeSlice(null, OffsetDateTime.now(ZoneOffset.UTC));
         }
+        String raw = requestedAt;
+        String trimmed = requestedAt.trim();
         try {
-            return OffsetDateTime.parse(value);
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Invalid datetime format.");
+            OffsetDateTime parsed = OffsetDateTime.parse(trimmed);
+            return new TimeSlice(raw, parsed.withOffsetSameInstant(ZoneOffset.UTC));
+        } catch (DateTimeParseException ex) {
+            if (LOCAL_DATETIME_PATTERN.matcher(trimmed).matches()) {
+                throw new ValidationException("Datetime must include offset.",
+                    List.of(new com.example.graph.web.problem.ProblemFieldError("at",
+                        "Datetime must include offset.")));
+            }
+            throw new ValidationException("Invalid datetime format.",
+                List.of(new com.example.graph.web.problem.ProblemFieldError("at", "Invalid datetime format.")));
         }
     }
 
+    private record TimeSlice(String requested, OffsetDateTime resolved) {
+    }
 }

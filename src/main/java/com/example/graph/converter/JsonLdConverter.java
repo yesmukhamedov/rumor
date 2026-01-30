@@ -4,9 +4,11 @@ import com.example.graph.model.EdgeEntity;
 import com.example.graph.model.NodeEntity;
 import com.example.graph.model.phone.PhoneEntity;
 import com.example.graph.model.phone.PhoneValueEntity;
+import com.example.graph.model.value.EdgeValueEntity;
 import com.example.graph.service.phone.PhoneFormatUtils;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +16,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class JsonLdConverter {
+    private static final List<String> META_INCLUDE = List.of("relations", "categories", "notes", "phones");
+    private static final Map<String, Object> CONTEXT = buildContext();
+
     public JsonLdDocument toJsonLd(GraphSnapshot snapshot) {
         List<Object> graph = new ArrayList<>();
         for (NodeEntity node : snapshot.getNodes()) {
@@ -38,9 +43,15 @@ public class JsonLdConverter {
             if (edge.getToNode() != null) {
                 entry.put("to", "node:" + edge.getToNode().getId());
             }
-            String value = snapshot.getEdgeValues().get(edge.getId());
-            if (value != null) {
-                entry.put("value", value);
+            EdgeValueEntity currentValue = snapshot.getEdgeValues().get(edge.getId());
+            if (currentValue != null && currentValue.getValue() != null) {
+                entry.put("value", currentValue.getValue());
+                if ("Relation".equals(entry.get("kind"))) {
+                    entry.put("relationType", currentValue.getValue());
+                }
+            }
+            if (currentValue != null && currentValue.getBody() != null) {
+                entry.put("body", currentValue.getBody());
             }
             if (edge.getCreatedAt() != null) {
                 entry.put("createdAt", edge.getCreatedAt());
@@ -73,31 +84,39 @@ public class JsonLdConverter {
 
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put("nodeId", snapshot.getFocusNodeId());
-        meta.put("at", toIsoString(snapshot.getAt()));
+        meta.put("at", toIsoString(snapshot.getAtResolved()));
+        meta.put("atRequested", snapshot.getAtRequested());
+        meta.put("atResolved", toIsoString(snapshot.getAtResolved()));
+        meta.put("timezone", snapshot.getTimezone());
         meta.put("scope", snapshot.getScope());
+        meta.put("hops", snapshot.getHops());
+        meta.put("include", META_INCLUDE);
+        meta.put("contextVersion", "v1");
 
-        String id = buildSnapshotId(snapshot.getFocusNodeId(), snapshot.getAt());
-        return new JsonLdDocument(buildContext(), id, "GraphSnapshot", meta, graph);
+        String id = buildSnapshotId(snapshot.getFocusNodeId(), snapshot.getAtResolved());
+        return new JsonLdDocument(CONTEXT, id, "GraphSnapshot", meta, graph);
     }
 
     private String buildSnapshotId(Long nodeId, OffsetDateTime at) {
-        StringBuilder builder = new StringBuilder();
+        String encodedAt = encodeIsoString(toIsoString(at));
         if (nodeId == null) {
-            builder.append("snapshot:full");
-        } else {
-            builder.append("snapshot:node:").append(nodeId);
+            return "urn:shezhire:snapshot:full:" + encodedAt;
         }
-        if (at != null) {
-            builder.append("@").append(at);
-        }
-        return builder.toString();
+        return "urn:shezhire:snapshot:node:" + nodeId + ":" + encodedAt;
     }
 
     private String toIsoString(OffsetDateTime at) {
         return at == null ? null : at.toString();
     }
 
-    private Map<String, Object> buildContext() {
+    private static String encodeIsoString(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replace(":", "%3A").replace("+", "%2B");
+    }
+
+    private static Map<String, Object> buildContext() {
         Map<String, Object> context = new LinkedHashMap<>();
         context.put("@vocab", "https://example.org/shezhire#");
         context.put("Node", "Node");
@@ -105,6 +124,12 @@ public class JsonLdConverter {
         context.put("Phone", "Phone");
         context.put("id", "@id");
         context.put("type", "@type");
+        context.put("kind", "kind");
+        context.put("relationType", "relationType");
+        context.put("createdAt", "createdAt");
+        context.put("expiredAt", "expiredAt");
+        context.put("value", "value");
+        context.put("body", "body");
         Map<String, Object> from = new LinkedHashMap<>();
         from.put("@id", "from");
         from.put("@type", "@id");
@@ -117,7 +142,7 @@ public class JsonLdConverter {
         hasPhone.put("@id", "hasPhone");
         hasPhone.put("@type", "@id");
         context.put("hasPhone", hasPhone);
-        return context;
+        return Collections.unmodifiableMap(context);
     }
 
     private String resolveKind(EdgeEntity edge) {

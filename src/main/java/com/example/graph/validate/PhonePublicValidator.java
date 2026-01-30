@@ -25,30 +25,34 @@ public class PhonePublicValidator {
         this.phoneDigitsValidator = phoneDigitsValidator;
     }
 
-    public void validate(PhonePublicForm form) {
+    public void validate(PhonePublicForm form, String fieldPrefix, ValidationErrorCollector errors) {
         if (form == null) {
-            throw new ValidationException("Phone data is required.");
+            errors.add(fieldPrefix, "Phone data is required.");
+            return;
         }
         if (form.getNodeId() == null) {
-            throw new ValidationException("Node is required.");
+            errors.add(fieldPrefix + ".nodeId", "Node is required.");
+        } else if (!nodeRepository.existsById(form.getNodeId())) {
+            errors.add(fieldPrefix + ".nodeId", "Node not found.");
         }
         if (form.getPatternId() == null) {
-            throw new ValidationException("Pattern is required.");
+            errors.add(fieldPrefix + ".patternId", "Pattern is required.");
         }
-        if (form.getValue() == null || form.getValue().isBlank()) {
-            throw new ValidationException("Digits are required.");
+        String normalized = form.getValue() == null ? null : form.getValue().trim();
+        if (normalized == null || normalized.isBlank()) {
+            errors.add(fieldPrefix + ".value", "Digits are required.");
+        } else if (normalized.length() > MAX_VALUE_LENGTH) {
+            errors.add(fieldPrefix + ".value", "Digits must be at most 32 characters.");
         }
-        if (form.getValue().trim().length() > MAX_VALUE_LENGTH) {
-            throw new ValidationException("Digits must be at most 32 characters.");
+        if (form.getPatternId() != null) {
+            phonePatternRepository.findById(form.getPatternId()).ifPresentOrElse(
+                pattern -> phoneDigitsValidator.validateDigitsAgainstPattern(normalized, pattern,
+                    fieldPrefix + ".value", errors),
+                () -> errors.add(fieldPrefix + ".patternId", "Pattern not found.")
+            );
         }
-        if (!nodeRepository.existsById(form.getNodeId())) {
-            throw new ValidationException("Node not found.");
-        }
-        var pattern = phonePatternRepository.findById(form.getPatternId())
-            .orElseThrow(() -> new ValidationException("Pattern not found."));
-        phoneDigitsValidator.validateDigitsAgainstPattern(form.getValue().trim(), pattern);
-        if (phoneValueRepository.existsByValue(form.getValue().trim())) {
-            throw new ValidationException("Phone value already exists.");
+        if (normalized != null && !normalized.isBlank() && phoneValueRepository.existsByValue(normalized)) {
+            errors.add(fieldPrefix + ".value", "Phone value already exists.");
         }
     }
 }

@@ -19,6 +19,12 @@ import com.example.graph.repository.PhoneValueRepository;
 import com.example.graph.service.phone.PhoneValueService;
 import com.example.graph.service.value.EdgeValueService;
 import com.example.graph.service.value.NodeValueService;
+import com.example.graph.validate.EdgePublicValidator;
+import com.example.graph.validate.NodePublicValidator;
+import com.example.graph.validate.PhonePublicValidator;
+import com.example.graph.validate.ValidationErrorCollector;
+import com.example.graph.validate.ValidationException;
+import com.example.graph.web.problem.ProblemFieldError;
 import com.example.graph.web.PublicGraphPostRequest;
 import com.example.graph.web.PublicValuesPatchRequest;
 import com.example.graph.web.form.EdgePublicForm;
@@ -27,6 +33,7 @@ import com.example.graph.web.form.PhonePublicForm;
 import com.example.graph.web.form.EdgeValueForm;
 import com.example.graph.web.form.NodeValueForm;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -49,6 +56,9 @@ public class PublicGraphService {
     private final NodePublicConverter nodePublicConverter;
     private final EdgePublicConverter edgePublicConverter;
     private final PhonePublicConverter phonePublicConverter;
+    private final NodePublicValidator nodePublicValidator;
+    private final EdgePublicValidator edgePublicValidator;
+    private final PhonePublicValidator phonePublicValidator;
 
     public PublicGraphService(NodeRepository nodeRepository,
                               EdgeRepository edgeRepository,
@@ -61,7 +71,10 @@ public class PublicGraphService {
                               PhoneValueRepository phoneValueRepository,
                               NodePublicConverter nodePublicConverter,
                               EdgePublicConverter edgePublicConverter,
-                              PhonePublicConverter phonePublicConverter) {
+                              PhonePublicConverter phonePublicConverter,
+                              NodePublicValidator nodePublicValidator,
+                              EdgePublicValidator edgePublicValidator,
+                              PhonePublicValidator phonePublicValidator) {
         this.nodeRepository = nodeRepository;
         this.edgeRepository = edgeRepository;
         this.phoneRepository = phoneRepository;
@@ -74,26 +87,33 @@ public class PublicGraphService {
         this.nodePublicConverter = nodePublicConverter;
         this.edgePublicConverter = edgePublicConverter;
         this.phonePublicConverter = phonePublicConverter;
+        this.nodePublicValidator = nodePublicValidator;
+        this.edgePublicValidator = edgePublicValidator;
+        this.phonePublicValidator = phonePublicValidator;
     }
 
     @Transactional(readOnly = true)
-    public GraphSnapshot loadGraph(Long nodeId, OffsetDateTime at) {
-        OffsetDateTime now = at == null ? OffsetDateTime.now() : at;
+    public GraphSnapshot loadGraph(Long nodeId, String atRequested, OffsetDateTime atResolved) {
+        OffsetDateTime resolved = atResolved == null ? OffsetDateTime.now(ZoneOffset.UTC) : atResolved;
         List<EdgeEntity> edges = loadEdges(nodeId);
         List<NodeEntity> nodes = loadNodes(nodeId, edges);
         Set<Long> nodeIds = nodes.stream().map(NodeEntity::getId).collect(Collectors.toSet());
         List<PhoneEntity> phones = loadPhones(nodeId, nodeIds);
         String scope = nodeId == null ? "FULL" : "1-hop";
+        int hops = nodeId == null ? 0 : 1;
         return new GraphSnapshot(
             nodes,
             edges,
             phones,
-            nodeValueService.getCurrentValues(now),
-            edgeValueService.getCurrentValues(now),
-            phoneValueService.getCurrentValues(now),
-            now,
+            nodeValueService.getCurrentValues(resolved),
+            edgeValueService.getCurrentValueEntities(resolved),
+            phoneValueService.getCurrentValues(resolved),
+            atRequested,
+            resolved,
+            "UTC",
             nodeId,
-            scope
+            scope,
+            hops
         );
     }
 
@@ -102,6 +122,17 @@ public class PublicGraphService {
         List<NodePublicForm> nodes = request.getNodes() == null ? List.of() : request.getNodes();
         List<EdgePublicForm> edges = request.getEdges() == null ? List.of() : request.getEdges();
         List<PhonePublicForm> phones = request.getPhones() == null ? List.of() : request.getPhones();
+        ValidationErrorCollector errors = new ValidationErrorCollector();
+        for (int index = 0; index < nodes.size(); index++) {
+            nodePublicValidator.validate(nodes.get(index), "nodes[" + index + "]", errors);
+        }
+        for (int index = 0; index < edges.size(); index++) {
+            edgePublicValidator.validate(edges.get(index), "edges[" + index + "]", errors);
+        }
+        for (int index = 0; index < phones.size(); index++) {
+            phonePublicValidator.validate(phones.get(index), "phones[" + index + "]", errors);
+        }
+        errors.throwIfAny();
 
         for (NodePublicForm form : nodes) {
             NodeEntity node = nodePublicConverter.toEntity(form);
@@ -128,7 +159,15 @@ public class PublicGraphService {
 
     @Transactional
     public void applyValuesPatch(PublicValuesPatchRequest request) {
-        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+        ValidationErrorCollector errors = new ValidationErrorCollector();
+        if (request.getNodeValue() != null) {
+            nodePublicValidator.validate(request.getNodeValue(), "nodeValue", errors);
+        }
+        if (request.getEdgeValue() != null) {
+            edgePublicValidator.validate(request.getEdgeValue(), "edgeValue", errors);
+        }
+        errors.throwIfAny();
         if (request.getNodeValue() != null) {
             applyNodeValueUpdate(request.getNodeValue(), now);
         }
@@ -153,7 +192,8 @@ public class PublicGraphService {
             return nodeRepository.findAll();
         }
         NodeEntity root = nodeRepository.findById(nodeId)
-            .orElseThrow(() -> new IllegalArgumentException("Node not found."));
+            .orElseThrow(() -> new ValidationException("Node not found.",
+                List.of(new ProblemFieldError("nodeId", "Node not found."))));
         Set<Long> ids = new HashSet<>();
         ids.add(root.getId());
         for (EdgeEntity edge : edges) {
@@ -199,7 +239,8 @@ public class PublicGraphService {
     private void applyNodeValueUpdate(NodeValueForm form, OffsetDateTime now) {
         OffsetDateTime effectiveAt = form.getEffectiveAt() == null ? now : form.getEffectiveAt();
         NodeEntity node = nodeRepository.findById(form.getNodeId())
-            .orElseThrow(() -> new IllegalArgumentException("Node not found."));
+            .orElseThrow(() -> new ValidationException("Node not found.",
+                List.of(new ProblemFieldError("nodeValue.nodeId", "Node not found."))));
         NodeValueEntity current = nodeValueRepository.findCurrentValueByNodeId(node.getId(), effectiveAt)
             .orElse(null);
         if (current != null) {
@@ -213,7 +254,8 @@ public class PublicGraphService {
     private void applyEdgeValueUpdate(EdgeValueForm form, OffsetDateTime now) {
         OffsetDateTime effectiveAt = form.getEffectiveAt() == null ? now : form.getEffectiveAt();
         EdgeEntity edge = edgeRepository.findById(form.getEdgeId())
-            .orElseThrow(() -> new IllegalArgumentException("Edge not found."));
+            .orElseThrow(() -> new ValidationException("Edge not found.",
+                List.of(new ProblemFieldError("edgeValue.edgeId", "Edge not found."))));
         EdgeValueEntity current = edgeValueRepository.findCurrentValueByEdgeId(edge.getId(), effectiveAt)
             .orElse(null);
         if (current != null) {

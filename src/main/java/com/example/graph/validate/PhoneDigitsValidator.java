@@ -18,4 +18,23 @@ public class PhoneDigitsValidator {
                 + pattern.getCode() + ".");
         }
     }
+
+    public void validateDigitsAgainstPattern(String digits,
+                                             PhonePatternEntity pattern,
+                                             String fieldPrefix,
+                                             ValidationErrorCollector errors) {
+        if (digits == null || digits.isBlank()) {
+            errors.add(fieldPrefix, "Digits are required.");
+            return;
+        }
+        if (!digits.matches("^[0-9]+$")) {
+            errors.add(fieldPrefix, "Digits must contain only numbers.");
+            return;
+        }
+        long expected = pattern.getValue().chars().filter(ch -> ch == '_').count();
+        if (digits.length() != expected) {
+            errors.add(fieldPrefix, "Phone digits length must be " + expected + " for pattern "
+                + pattern.getCode() + ".");
+        }
+    }
 }

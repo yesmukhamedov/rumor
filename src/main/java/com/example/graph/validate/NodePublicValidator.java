@@ -15,37 +15,37 @@ public class NodePublicValidator {
         this.nodeRepository = nodeRepository;
     }
 
-    public void validate(NodePublicForm form) {
+    public void validate(NodePublicForm form, String fieldPrefix, ValidationErrorCollector errors) {
         if (form == null) {
-            throw new ValidationException("Node data is required.");
+            errors.add(fieldPrefix, "Node data is required.");
+            return;
         }
         if (form.getId() == null && form.getValue() == null) {
-            throw new ValidationException("Node value is required.");
+            errors.add(fieldPrefix + ".value", "Node value is required.");
         }
         if (form.getValue() != null) {
-            validateValue(form.getValue());
+            validateValue(form.getValue(), fieldPrefix + ".value", errors);
         }
     }
 
-    public void validate(NodeValueForm form) {
+    public void validate(NodeValueForm form, String fieldPrefix, ValidationErrorCollector errors) {
         if (form == null) {
-            throw new ValidationException("Node value is required.");
+            errors.add(fieldPrefix, "Node value is required.");
+            return;
         }
         if (form.getNodeId() == null) {
-            throw new ValidationException("Node is required.");
+            errors.add(fieldPrefix + ".nodeId", "Node is required.");
+        } else if (!nodeRepository.existsById(form.getNodeId())) {
+            errors.add(fieldPrefix + ".nodeId", "Node not found.");
         }
-        validateValue(form);
-        if (!nodeRepository.existsById(form.getNodeId())) {
-            throw new ValidationException("Node not found.");
-        }
+        validateValue(form, fieldPrefix, errors);
     }
 
-    private void validateValue(NodeValueForm form) {
+    private void validateValue(NodeValueForm form, String fieldPrefix, ValidationErrorCollector errors) {
         if (form.getValue() == null || form.getValue().isBlank()) {
-            throw new ValidationException("Node value is required.");
-        }
-        if (form.getValue().trim().length() > MAX_VALUE_LENGTH) {
-            throw new ValidationException("Node value must be at most 200 characters.");
+            errors.add(fieldPrefix + ".value", "Node value is required.");
+        } else if (form.getValue().trim().length() > MAX_VALUE_LENGTH) {
+            errors.add(fieldPrefix + ".value", "Node value must be at most 200 characters.");
         }
     }
 }

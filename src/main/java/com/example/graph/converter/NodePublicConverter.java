@@ -3,6 +3,7 @@ package com.example.graph.converter;
 import com.example.graph.model.NodeEntity;
 import com.example.graph.model.value.NodeValueEntity;
 import com.example.graph.repository.NodeRepository;
+import com.example.graph.util.HtmlSanitizer;
 import com.example.graph.web.form.NodePublicForm;
 import com.example.graph.web.form.NodeValueForm;
 import java.time.OffsetDateTime;
@@ -11,9 +12,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class NodePublicConverter {
     private final NodeRepository nodeRepository;
+    private final HtmlSanitizer htmlSanitizer;
 
-    public NodePublicConverter(NodeRepository nodeRepository) {
+    public NodePublicConverter(NodeRepository nodeRepository, HtmlSanitizer htmlSanitizer) {
         this.nodeRepository = nodeRepository;
+        this.htmlSanitizer = htmlSanitizer;
     }
 
     public NodeEntity toEntity(NodePublicForm form) {
@@ -31,7 +34,7 @@ public class NodePublicConverter {
         NodeValueEntity value = new NodeValueEntity();
         value.setNode(node);
         value.setValue(form.getValue().trim());
-        value.setBody(normalize(form.getBody()));
+        value.setBody(htmlSanitizer.sanitize(form.getBody()));
         value.setCreatedAt(resolveEffectiveAt(form.getEffectiveAt(), now));
         return value;
     }
@@ -40,10 +43,4 @@ public class NodePublicConverter {
         return effectiveAt == null ? fallback : effectiveAt;
     }
 
-    private String normalize(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim();
-    }
 }

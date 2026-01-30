@@ -64,6 +64,44 @@ mvn spring-boot:run
 - http://localhost:8080/admin/phones
 - http://localhost:8080/graph/view
 
+## Public API documentation
+
+Swagger UI is available at:
+
+- http://localhost:8080/swagger-ui/index.html
+
+Example requests:
+
+```bash
+curl -H "Accept: application/ld+json" \
+  "http://localhost:8080/public/graph?at=2026-01-30T10:00:00Z"
+```
+
+```bash
+curl -X POST "http://localhost:8080/public/graph" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/ld+json" \
+  -d '{
+    "nodes": [
+      { "value": { "value": "New Person" } }
+    ],
+    "edges": [],
+    "phones": []
+  }'
+```
+
+```bash
+curl -X PATCH "http://localhost:8080/public/values" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/ld+json" \
+  -d '{
+    "edgeValue": {
+      "edgeId": 1,
+      "relationType": "PARENT"
+    }
+  }'
+```
+
 ## Configuration
 
 Database settings live in `src/main/resources/application.yml` and default to:
