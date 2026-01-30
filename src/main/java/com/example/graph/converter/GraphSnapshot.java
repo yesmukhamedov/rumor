@@ -69,15 +69,15 @@ public class GraphSnapshot {
     }
 
     public OffsetDateTime getAtRequested() {
-        return timeSlice.requestedAt();
+        return timeSlice.getRequestedAt();
     }
 
     public OffsetDateTime getAtResolved() {
-        return timeSlice.resolvedAt();
+        return timeSlice.getResolvedAt();
     }
 
     public String getTimezone() {
-        return timeSlice.timezone();
+        return timeSlice.getTimezone();
     }
 
     public TimeSlice getTimeSlice() {

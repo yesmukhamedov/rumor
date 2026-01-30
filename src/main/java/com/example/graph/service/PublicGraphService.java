@@ -95,7 +95,7 @@ public class PublicGraphService {
 
     @Transactional(readOnly = true)
     public GraphSnapshot loadGraph(Long nodeId, TimeSlice timeSlice) {
-        OffsetDateTime resolved = timeSlice.resolvedAt();
+        OffsetDateTime resolved = timeSlice.getResolvedAt();
         List<EdgeEntity> edges = loadEdges(nodeId);
         List<NodeEntity> nodes = loadNodes(nodeId, edges);
         Set<Long> nodeIds = nodes.stream().map(NodeEntity::getId).collect(Collectors.toSet());
