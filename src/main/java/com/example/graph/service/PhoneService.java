@@ -1,17 +1,16 @@
 package com.example.graph.service;
 
+import com.example.graph.model.NodeEntity;
 import com.example.graph.model.PhoneEntity;
 import com.example.graph.model.PhonePatternEntity;
-import com.example.graph.model.NodeEntity;
-import com.example.graph.model.ValueEntity;
 import com.example.graph.repository.NodeRepository;
 import com.example.graph.repository.PhonePatternRepository;
 import com.example.graph.repository.PhoneRepository;
-import com.example.graph.repository.ValueRepository;
 import com.example.graph.web.dto.PhoneDto;
 import com.example.graph.web.dto.PhonePatternDto;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,16 +19,19 @@ public class PhoneService {
     private final PhoneRepository phoneRepository;
     private final PhonePatternRepository phonePatternRepository;
     private final NodeRepository nodeRepository;
-    private final ValueRepository valueRepository;
+    private final PhoneValueService phoneValueService;
+    private final NodeValueService nodeValueService;
 
     public PhoneService(PhoneRepository phoneRepository,
                         PhonePatternRepository phonePatternRepository,
                         NodeRepository nodeRepository,
-                        ValueRepository valueRepository) {
+                        PhoneValueService phoneValueService,
+                        NodeValueService nodeValueService) {
         this.phoneRepository = phoneRepository;
         this.phonePatternRepository = phonePatternRepository;
         this.nodeRepository = nodeRepository;
-        this.valueRepository = valueRepository;
+        this.phoneValueService = phoneValueService;
+        this.nodeValueService = nodeValueService;
     }
 
     public PhoneEntity createPhone(Long nodeId, Long patternId, String value) {
@@ -49,22 +51,16 @@ public class PhoneService {
         if (phoneRepository.existsByNodeId(nodeId)) {
             throw new IllegalArgumentException("Selected node already has a phone.");
         }
-        if (phoneRepository.existsByValueText(value)) {
+        if (phoneValueService.existsByValue(value)) {
             throw new IllegalArgumentException("Phone value already exists.");
         }
         validateMaskedValue(value, pattern.getValue());
-        ValueEntity valueEntity = valueRepository.findByText(value)
-            .orElseGet(() -> {
-                ValueEntity created = new ValueEntity();
-                created.setText(value);
-                created.setCreatedAt(java.time.OffsetDateTime.now());
-                return valueRepository.save(created);
-            });
         PhoneEntity phone = new PhoneEntity();
         phone.setPattern(pattern);
         phone.setNode(node);
-        phone.setValue(valueEntity);
-        return phoneRepository.save(phone);
+        PhoneEntity savedPhone = phoneRepository.save(phone);
+        phoneValueService.createCurrentValue(savedPhone, value, java.time.OffsetDateTime.now());
+        return savedPhone;
     }
 
     public void deletePhone(Long id) {
@@ -73,12 +69,15 @@ public class PhoneService {
 
     @Transactional(readOnly = true)
     public List<PhoneDto> listPhonesDto() {
+        java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
+        Map<Long, String> nodeNames = nodeValueService.getCurrentValues(now);
+        Map<Long, String> phoneValues = phoneValueService.getCurrentValues(now);
         return phoneRepository.findAll().stream()
             .map(phone -> new PhoneDto(
                 phone.getId(),
-                phone.getNode().getValue().getText(),
+                nodeNames.getOrDefault(phone.getNode().getId(), "—"),
                 phone.getPattern().getCode(),
-                phone.getValue().getText()
+                phoneValues.get(phone.getId())
             ))
             .toList();
     }

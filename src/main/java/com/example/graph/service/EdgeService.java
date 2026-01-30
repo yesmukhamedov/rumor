@@ -2,17 +2,14 @@ package com.example.graph.service;
 
 import com.example.graph.model.EdgeEntity;
 import com.example.graph.model.NodeEntity;
-import com.example.graph.model.ValueEntity;
 import com.example.graph.repository.EdgeRepository;
 import com.example.graph.repository.NodeRepository;
-import com.example.graph.repository.ValueRepository;
 import com.example.graph.web.dto.EdgeDto;
-import com.example.graph.web.dto.ValueDto;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,15 +17,20 @@ import org.springframework.transaction.annotation.Transactional;
 public class EdgeService {
     private final EdgeRepository edgeRepository;
     private final NodeRepository nodeRepository;
-    private final ValueRepository valueRepository;
+    private final EdgeValueService edgeValueService;
+    private final NodeValueService nodeValueService;
 
-    public EdgeService(EdgeRepository edgeRepository, NodeRepository nodeRepository, ValueRepository valueRepository) {
+    public EdgeService(EdgeRepository edgeRepository,
+                       NodeRepository nodeRepository,
+                       EdgeValueService edgeValueService,
+                       NodeValueService nodeValueService) {
         this.edgeRepository = edgeRepository;
         this.nodeRepository = nodeRepository;
-        this.valueRepository = valueRepository;
+        this.edgeValueService = edgeValueService;
+        this.nodeValueService = nodeValueService;
     }
 
-    public EdgeEntity createEdge(Long fromId, Long toId, Long labelId, String newLabel,
+    public EdgeEntity createEdge(Long fromId, Long toId, String labelValue, String newLabel,
                                  LocalDateTime createdAt, LocalDateTime expiredAt) {
         if (fromId == null && toId == null) {
             throw new IllegalArgumentException("Edge cannot be both PUBLIC and PRIVATE.");
@@ -61,48 +63,58 @@ public class EdgeService {
         edge.setCreatedAt(createdAtOffset);
         edge.setExpiredAt(expiredAtOffset);
 
-        ValueEntity value = resolveValue(labelId, newLabel);
-        if (value != null) {
-            edge.setValue(value);
+        String label = resolveLabelValue(labelValue, newLabel);
+        if (labelValue != null && !labelValue.isBlank() && (newLabel == null || newLabel.isBlank())) {
+            List<String> currentPublicLabels = edgeValueService.getCurrentPublicValues(OffsetDateTime.now());
+            if (currentPublicLabels.stream().noneMatch(value -> value.equals(label))) {
+                throw new IllegalArgumentException("Label is not a public edge label.");
+            }
         }
-        return edgeRepository.save(edge);
+        EdgeEntity savedEdge = edgeRepository.save(edge);
+        if (label != null) {
+            edgeValueService.createCurrentValue(savedEdge, label, OffsetDateTime.now());
+        }
+        return savedEdge;
     }
 
-    private ValueEntity resolveValue(Long labelId, String newLabel) {
+    private String resolveLabelValue(String labelValue, String newLabel) {
         String trimmedLabel = newLabel == null ? null : newLabel.trim();
         if (trimmedLabel != null && !trimmedLabel.isEmpty()) {
             if (trimmedLabel.length() > 200) {
                 throw new IllegalArgumentException("New label must be between 1 and 200 characters.");
             }
-            ValueEntity valueEntity = new ValueEntity();
-            valueEntity.setText(trimmedLabel);
-            valueEntity.setCreatedAt(OffsetDateTime.now());
-            return valueRepository.save(valueEntity);
+            return trimmedLabel;
         }
         if (newLabel != null && !newLabel.isEmpty() && trimmedLabel != null && trimmedLabel.isEmpty()) {
             throw new IllegalArgumentException("New label must be between 1 and 200 characters.");
         }
-        if (labelId != null) {
-            ValueEntity label = edgeRepository.findDistinctPublicEdgeValues().stream()
-                .filter(candidate -> labelId.equals(candidate.getId()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Label is not a public edge label."));
-            return label;
+        if (labelValue != null && !labelValue.isBlank()) {
+            String trimmedValue = labelValue.trim();
+            if (trimmedValue.isEmpty() || trimmedValue.length() > 200) {
+                throw new IllegalArgumentException("Label must be between 1 and 200 characters.");
+            }
+            return trimmedValue;
         }
         return null;
     }
 
     @Transactional(readOnly = true)
     public List<EdgeDto> listEdgesDto() {
+        OffsetDateTime now = OffsetDateTime.now();
+        Map<Long, String> edgeLabels = edgeValueService.getCurrentValues(now);
+        Map<Long, String> nodeNames = nodeValueService.getCurrentValues(now);
         return edgeRepository.findAll().stream()
-            .map(this::toDto)
+            .map(edge -> toDto(edge, edgeLabels, nodeNames))
             .toList();
     }
 
     @Transactional(readOnly = true)
     public List<EdgeDto> getPublicEdges() {
+        OffsetDateTime now = OffsetDateTime.now();
+        Map<Long, String> edgeLabels = edgeValueService.getCurrentValues(now);
+        Map<Long, String> nodeNames = nodeValueService.getCurrentValues(now);
         return edgeRepository.findAllByFromNodeIsNull().stream()
-            .map(this::toDto)
+            .map(edge -> toDto(edge, edgeLabels, nodeNames))
             .toList();
     }
 
@@ -111,10 +123,9 @@ public class EdgeService {
     }
 
     @Transactional(readOnly = true)
-    public List<ValueDto> getPublicEdgeValues() {
-        return edgeRepository.findDistinctPublicEdgeValues().stream()
-            .map(value -> new ValueDto(value.getId(), value.getText()))
-            .sorted(Comparator.comparing(ValueDto::getText, String.CASE_INSENSITIVE_ORDER))
+    public List<String> getPublicEdgeValues() {
+        return edgeValueService.getCurrentPublicValues(OffsetDateTime.now()).stream()
+            .sorted(String.CASE_INSENSITIVE_ORDER)
             .toList();
     }
 
@@ -125,18 +136,18 @@ public class EdgeService {
         return value.atZone(ZoneId.systemDefault()).toOffsetDateTime();
     }
 
-    private EdgeDto toDto(EdgeEntity edge) {
+    private EdgeDto toDto(EdgeEntity edge, Map<Long, String> edgeLabels, Map<Long, String> nodeNames) {
         NodeEntity fromNode = edge.getFromNode();
         NodeEntity toNode = edge.getToNode();
         return new EdgeDto(
             edge.getId(),
             fromNode == null ? null : fromNode.getId(),
             toNode == null ? null : toNode.getId(),
-            edge.getValue() == null ? null : edge.getValue().getText(),
+            edgeLabels.get(edge.getId()),
             edge.getCreatedAt(),
             edge.getExpiredAt(),
-            fromNode == null ? null : fromNode.getValue().getText(),
-            toNode == null ? null : toNode.getValue().getText()
+            fromNode == null ? null : nodeNames.get(fromNode.getId()),
+            toNode == null ? null : nodeNames.get(toNode.getId())
         );
     }
 }

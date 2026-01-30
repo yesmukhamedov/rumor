@@ -5,7 +5,7 @@ public class EdgeForm {
 
     private String toId;
 
-    private Long labelId;
+    private String labelValue;
 
     private String newLabel;
 
@@ -29,12 +29,12 @@ public class EdgeForm {
         this.toId = toId;
     }
 
-    public Long getLabelId() {
-        return labelId;
+    public String getLabelValue() {
+        return labelValue;
     }
 
-    public void setLabelId(Long labelId) {
-        this.labelId = labelId;
+    public void setLabelValue(String labelValue) {
+        this.labelValue = labelValue;
     }
 
     public String getNewLabel() {

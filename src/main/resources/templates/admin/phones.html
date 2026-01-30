@@ -52,7 +52,7 @@
                         th:attr="data-mask=${pattern.value}"></option>
             </select>
             <label for="phoneValue">Phone</label>
-            <input id="phoneValue" type="text" th:field="*{value}" maxlength="64" autocomplete="off" required />
+            <input id="phoneValue" type="text" th:field="*{value}" maxlength="32" autocomplete="off" required />
             <button type="submit">Create Phone</button>
         </div>
         <div class="form-row">
@@ -124,7 +124,7 @@
         function setMask(newMask, preserveInput) {
             mask = newMask || '';
             updateUnderscorePositions();
-            phoneInput.maxLength = mask.length || 64;
+            phoneInput.maxLength = mask.length || 32;
             if (!preserveInput || !phoneInput.value) {
                 phoneInput.value = mask;
             } else {
