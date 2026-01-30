@@ -83,8 +83,8 @@
         label: node.name
     }));
 
-    const normalEdges = edges.filter(edge => edge.fromId != null && edge.toId != null);
-    const privateEdges = edges.filter(edge => edge.fromId != null && edge.toId == null);
+    const normalEdges = edges.filter(edge => edge.relation);
+    const privateEdges = edges.filter(edge => edge.note);
 
     const edgesData = normalEdges.map(edge => ({
         from: edge.fromId,

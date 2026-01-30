@@ -114,6 +114,7 @@ public class EdgeService {
         Map<Long, String> edgeLabels = edgeValueService.getCurrentValues(now);
         Map<Long, String> nodeNames = nodeValueService.getCurrentValues(now);
         return edgeRepository.findAllByFromNodeIsNull().stream()
+            .filter(EdgeEntity::isCategory)
             .map(edge -> toDto(edge, edgeLabels, nodeNames))
             .toList();
     }
@@ -147,7 +148,11 @@ public class EdgeService {
             edge.getCreatedAt(),
             edge.getExpiredAt(),
             fromNode == null ? null : nodeNames.get(fromNode.getId()),
-            toNode == null ? null : nodeNames.get(toNode.getId())
+            toNode == null ? null : nodeNames.get(toNode.getId()),
+            edge.isCategory(),
+            edge.isNote(),
+            edge.isRelation(),
+            edge.isInvalid()
         );
     }
 }

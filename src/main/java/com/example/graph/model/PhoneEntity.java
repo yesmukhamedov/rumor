@@ -9,12 +9,23 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(name = "phones")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"pattern", "node"})
 public class PhoneEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @NotNull
@@ -26,24 +37,4 @@ public class PhoneEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "node_id", nullable = false)
     private NodeEntity node;
-
-    public Long getId() {
-        return id;
-    }
-
-    public PhonePatternEntity getPattern() {
-        return pattern;
-    }
-
-    public void setPattern(PhonePatternEntity pattern) {
-        this.pattern = pattern;
-    }
-
-    public NodeEntity getNode() {
-        return node;
-    }
-
-    public void setNode(NodeEntity node) {
-        this.node = node;
-    }
 }

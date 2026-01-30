@@ -1,12 +1,47 @@
 # Graph Manager
 
-Spring Boot MVC + Thymeleaf app for managing a simple directed graph stored in PostgreSQL.
+A graph-based family genealogy manager (Шежіре) for building родственные связи.
 
-## Requirements
+## Project mission
 
-- Java 17
-- Maven 3.9+
-- Docker (for local PostgreSQL)
+This app models family data as a directed graph:
+
+- **Node = person**
+- **Edge = one unified connection entity** used in three modes:
+  1. **Category (PUBLIC):** `from_id = null`
+  2. **Note (PRIVATE):** `to_id = null`
+  3. **Relation:** both ends present (parent → child)
+
+## Entities overview
+
+- **NodeEntity:** a person node.
+- **EdgeEntity:** a single edge type that represents categories, private notes, or relations
+  (`isCategory`, `isNote`, `isRelation` helpers).
+- **PhoneEntity / PhonePatternEntity:** phone numbers linked to nodes + patterns.
+- **NodeValue / EdgeValue / PhoneValue:** versioned values with `created_at` / `expired_at`.
+
+## Example modeling patterns
+
+**1) Gender category**
+
+```
+NULL -> [Category: Male] -> Ayan
+```
+
+**2) Private note**
+
+```
+Ayan -> [Note: "Loves hiking"] -> NULL
+```
+
+**3) Family relation**
+
+```
+Ayan    -> [Relation] -> Dias   (Ayan is parent of Dias)
+Aigerim -> [Relation] -> Dias   (second incoming edge => second parent)
+```
+
+Two incoming relation edges mean two parents (мама/папа).
 
 ## Running locally
 
@@ -24,15 +59,10 @@ mvn spring-boot:run
 
 3. Open the admin UI:
 
-```
-http://localhost:8080/admin/nodes
-```
-
-The visual graph view is available at:
-
-```
-http://localhost:8080/graph/view
-```
+- http://localhost:8080/admin/nodes
+- http://localhost:8080/admin/edges
+- http://localhost:8080/admin/phones
+- http://localhost:8080/graph/view
 
 ## Configuration
 
@@ -43,10 +73,15 @@ Database settings live in `src/main/resources/application.yml` and default to:
 - Password: `graph`
 - URL: `jdbc:postgresql://localhost:5432/graphdb`
 
-## Notes
+## Seed data
 
-- Nodes can be created and deleted.
-- Edges are directed and enforce:
-  - no self-loops
-  - no duplicate `(from, to)` pairs
-- Phone numbers are managed under the phones admin page.
+There is a mockup migration (`V10__mockup_demo_family.sql`) intended for training/new users.
+
+## Future entity ideas (not implemented)
+
+- Authentication via phone OTP
+- Privacy scopes
+- Relationship types (mother/father/spouse) via edge label/value
+- Import/export GEDCOM-like formats
+- Search and merge duplicates
+- Audit history for values (already supported by value versioning)

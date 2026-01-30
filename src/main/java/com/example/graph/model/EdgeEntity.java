@@ -11,15 +11,26 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.OffsetDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Entity
 @Table(
     name = "edges",
     uniqueConstraints = @UniqueConstraint(columnNames = {"from_id", "to_id"})
 )
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@ToString(exclude = {"fromNode", "toNode"})
 public class EdgeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
@@ -36,39 +47,19 @@ public class EdgeEntity {
     @Column(name = "expired_at")
     private OffsetDateTime expiredAt;
 
-    public Long getId() {
-        return id;
+    public boolean isCategory() {
+        return fromNode == null && toNode != null;
     }
 
-    public NodeEntity getFromNode() {
-        return fromNode;
+    public boolean isNote() {
+        return fromNode != null && toNode == null;
     }
 
-    public void setFromNode(NodeEntity fromNode) {
-        this.fromNode = fromNode;
+    public boolean isRelation() {
+        return fromNode != null && toNode != null;
     }
 
-    public NodeEntity getToNode() {
-        return toNode;
-    }
-
-    public void setToNode(NodeEntity toNode) {
-        this.toNode = toNode;
-    }
-
-    public OffsetDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public OffsetDateTime getExpiredAt() {
-        return expiredAt;
-    }
-
-    public void setExpiredAt(OffsetDateTime expiredAt) {
-        this.expiredAt = expiredAt;
+    public boolean isInvalid() {
+        return fromNode == null && toNode == null;
     }
 }

@@ -117,8 +117,8 @@
         <tr th:each="edge : ${edges}">
             <td th:text="${edge.id}"></td>
             <td th:text="${edge.label != null ? edge.label : '—'}"></td>
-            <td th:text="${edge.fromName != null ? edge.fromName : 'PUBLIC'}"></td>
-            <td th:text="${edge.toName}"></td>
+            <td th:text="${edge.invalid ? 'INVALID' : (edge.category ? 'PUBLIC' : edge.fromName)}"></td>
+            <td th:text="${edge.invalid ? 'INVALID' : (edge.note ? 'PRIVATE' : edge.toName)}"></td>
             <td th:text="${edge.createdAt != null ? edge.createdAt : '—'}"></td>
             <td th:text="${edge.expiredAt != null ? edge.expiredAt : '—'}"></td>
             <td>
