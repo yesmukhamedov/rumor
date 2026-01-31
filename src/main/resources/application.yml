@@ -13,3 +13,12 @@ spring:
     enabled: true
 server:
   port: 8080
+auth:
+  base-url: http://localhost:8081
+  cookie-secure: false
+  refresh-cookie-max-age: 30d
+security:
+  jwt:
+    issuer-uri: ${AUTH_ISSUER_URI:}
+    jwk-set-uri: ${AUTH_JWK_SET_URI:}
+    hmac-secret: ${AUTH_JWT_HMAC_SECRET:}
