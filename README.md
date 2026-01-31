@@ -17,8 +17,8 @@ This app models family data as a directed graph:
 - **NodeEntity:** a person node.
 - **EdgeEntity:** a single edge type that represents categories, private notes, or relations
   (`isCategory`, `isNote`, `isRelation` helpers).
-- **UserEntity:** user identity linked to a node (UUID id).
-- **ProfileEntity:** versioned profile metadata (no phone digits stored in rumor).
+- **UserEntity:** user identity linked to a node (BIGSERIAL id).
+- **ProfileEntity:** versioned profile metadata mapped to UnifiedAuth external UUID.
 - **NodeValue / EdgeValue / Profile:** versioned values with `created_at` / `expired_at`.
 ## Example modeling patterns
 
@@ -217,7 +217,6 @@ The database is seeded with a minimal public vocabulary category attached to a s
 
 ## Future entity ideas (not implemented)
 
-- Authentication via phone OTP
 - Privacy scopes
 - Relationship types (mother/father/spouse) via edge label/value
 - Import/export GEDCOM-like formats

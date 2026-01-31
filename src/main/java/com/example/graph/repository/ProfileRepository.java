@@ -10,7 +10,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ProfileRepository extends JpaRepository<ProfileEntity, Long> {
-    List<ProfileEntity> findByUserId(UUID userId);
+    List<ProfileEntity> findByUserId(Long userId);
+
+    Optional<ProfileEntity> findFirstByExternalUserUuidOrderByCreatedAtDesc(UUID uuid);
+
+    Optional<ProfileEntity> findFirstByUserIdAndExpiredAtIsNull(Long userId);
 
     @Query("""
         select p
@@ -41,6 +45,6 @@ public interface ProfileRepository extends JpaRepository<ProfileEntity, Long> {
                 and (p2.expiredAt is null or :now <= p2.expiredAt)
           )
         """)
-    Optional<ProfileEntity> findCurrentProfileByUserId(@Param("userId") UUID userId,
+    Optional<ProfileEntity> findCurrentProfileByUserId(@Param("userId") Long userId,
                                                      @Param("now") OffsetDateTime now);
 }

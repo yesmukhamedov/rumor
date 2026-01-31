@@ -10,7 +10,6 @@ import com.example.graph.web.dto.UserDto;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,13 +38,12 @@ public class UserService {
         }
         OffsetDateTime now = OffsetDateTime.now();
         UserEntity user = new UserEntity();
-        user.setId(UUID.randomUUID());
         user.setNode(node);
         user.setCreatedAt(now);
         return userRepository.save(user);
     }
 
-    public void deleteUser(UUID id) {
+    public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
 
@@ -63,7 +61,7 @@ public class UserService {
             .toList();
     }
 
-    public UserEntity getUser(UUID userId) {
+    public UserEntity getUser(Long userId) {
         return userRepository.findById(userId)
             .orElseThrow(() -> new ValidationException("User not found."));
     }

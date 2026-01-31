@@ -5,7 +5,6 @@ import com.example.graph.service.user.UserService;
 import com.example.graph.validate.ValidationException;
 import com.example.graph.web.UserForm;
 import jakarta.validation.Valid;
-import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -59,7 +58,7 @@ public class AdminUserController {
     }
 
     @PostMapping("/{id}/delete")
-    public String deleteUser(@PathVariable UUID id, RedirectAttributes redirectAttributes) {
+    public String deleteUser(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         userService.deleteUser(id);
         redirectAttributes.addFlashAttribute("success", "User deleted.");
         return "redirect:/admin/users";

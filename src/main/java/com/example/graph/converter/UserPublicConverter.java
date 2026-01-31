@@ -7,7 +7,6 @@ import com.example.graph.repository.UserRepository;
 import com.example.graph.validate.ValidationException;
 import com.example.graph.web.form.UserPublicForm;
 import java.time.OffsetDateTime;
-import java.util.UUID;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -26,7 +25,6 @@ public class UserPublicConverter {
         return userRepository.findByNodeId(form.getNodeId())
             .orElseGet(() -> {
                 UserEntity user = new UserEntity();
-                user.setId(UUID.randomUUID());
                 user.setNode(node);
                 user.setCreatedAt(now);
                 return userRepository.save(user);

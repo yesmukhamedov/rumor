@@ -9,7 +9,6 @@ import com.example.graph.snapshot.TimeSlice;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public class GraphSnapshot {
     private final List<NodeEntity> nodes;
@@ -17,7 +16,7 @@ public class GraphSnapshot {
     private final List<UserEntity> users;
     private final Map<Long, String> nodeValues;
     private final Map<Long, EdgeValueEntity> edgeValues;
-    private final Map<UUID, ProfileEntity> profiles;
+    private final Map<Long, ProfileEntity> profiles;
     private final TimeSlice timeSlice;
     private final Long focusNodeId;
     private final String scope;
@@ -28,7 +27,7 @@ public class GraphSnapshot {
                          List<UserEntity> users,
                          Map<Long, String> nodeValues,
                          Map<Long, EdgeValueEntity> edgeValues,
-                         Map<UUID, ProfileEntity> profiles,
+                         Map<Long, ProfileEntity> profiles,
                          TimeSlice timeSlice,
                          Long focusNodeId,
                          String scope,
@@ -65,7 +64,7 @@ public class GraphSnapshot {
         return edgeValues;
     }
 
-    public Map<UUID, ProfileEntity> getProfiles() {
+    public Map<Long, ProfileEntity> getProfiles() {
         return profiles;
     }
 
