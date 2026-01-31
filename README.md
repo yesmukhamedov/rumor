@@ -51,14 +51,14 @@ Two incoming relation edges mean two parents (мама/папа).
 docker compose up -d
 ```
 
-2. Run database migrations and start the app:
+2. Run database migrations and start the app (JWT disabled by default):
 
 ```bash
 mvn spring-boot:run
 ```
 
-3. Start the Unified Authentication Service (UAS) and configure JWT validation (see
-   **Authentication & Security** below).
+3. (Optional) Start the Unified Authentication Service (UAS) and enable JWT validation with the
+   `local` profile (see **Authentication & Security** below).
 
 4. Open the admin UI:
 
@@ -146,7 +146,7 @@ This app is a Spring Security resource server. It expects **access tokens** as B
 by the Unified Authentication Service (UAS). Rumor does **not** implement login, OTP, or refresh
 flows. Configure the UAS as the only issuer and validate JWTs locally with JWKS.
 
-**Required configuration**
+**Required configuration (when enabled)**
 
 Set the JWT issuer or JWKS endpoint provided by the UAS (discovery or direct JWKS):
 
@@ -160,6 +160,8 @@ spring:
           jwk-set-uri: ${AUTH_JWK_SET_URI:}
 
 auth:
+  security:
+    enabled: false
   expected-issuer: ${AUTH_EXPECTED_ISSUER:}
   expected-audience: ${AUTH_EXPECTED_AUDIENCE:rumor}
   permit-public: true
@@ -189,6 +191,16 @@ curl -H "Authorization: Bearer <token>" http://localhost:8080/api/me
   - `/api/**`
   - `POST /public/**`, `PATCH /public/**`
   - all other endpoints by default
+
+### Local dev with UnifiedAuth
+
+To enable JWT validation against a local UnifiedAuth instance, run with the `local` profile:
+
+```bash
+SPRING_PROFILES_ACTIVE=local mvn spring-boot:run
+```
+
+This points the issuer to `http://localhost:8080` and turns on `auth.security.enabled=true`.
 
 ### Local dev escape hatch
 

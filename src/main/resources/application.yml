@@ -20,6 +20,8 @@ spring:
 server:
   port: 8080
 auth:
+  security:
+    enabled: false
   expected-issuer: ${AUTH_EXPECTED_ISSUER:}
   expected-audience: ${AUTH_EXPECTED_AUDIENCE:rumor}
   permit-public: true
