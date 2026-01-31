@@ -9,8 +9,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,11 +32,6 @@ public class ProfileEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
-
-    @NotBlank
-    @Size(max = 32)
-    @Column(name = "phone_digits", nullable = false, length = 32)
-    private String phoneDigits;
 
     @Column(name = "created_at")
     private OffsetDateTime createdAt;

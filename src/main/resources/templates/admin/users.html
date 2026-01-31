@@ -26,10 +26,6 @@
         <a th:href="@{/admin/edges}">Edges</a>
         <a th:href="@{/admin/users}">Users</a>
         <a th:href="@{/graph/view}">Graph View</a>
-        <form th:action="@{/logout}" method="post" class="inline">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-            <button type="submit">Logout</button>
-        </form>
     </nav>
 </header>
 
@@ -48,9 +44,6 @@
                         th:value="${node.id}"
                         th:text="${node.name}"></option>
             </select>
-            <label for="phoneDigits">Phone digits</label>
-            <input id="phoneDigits" type="text" th:field="*{phoneDigits}" maxlength="32" required
-                   inputmode="numeric" pattern="[0-9]+" autocomplete="off" />
             <button type="submit">Create User</button>
         </div>
     </form>
@@ -63,18 +56,16 @@
         <tr>
             <th>UUID</th>
             <th>Node Name</th>
-            <th>Phone Digits</th>
             <th>Actions</th>
         </tr>
         </thead>
         <tbody>
         <tr th:if="${#lists.isEmpty(users)}">
-            <td colspan="4">No users yet.</td>
+            <td colspan="3">No users yet.</td>
         </tr>
         <tr th:each="user : ${users}">
             <td th:text="${user.id}"></td>
             <td th:text="${user.nodeName}"></td>
-            <td th:text="${user.phoneDigits}"></td>
             <td>
                 <form class="inline" th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />

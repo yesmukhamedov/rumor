@@ -18,10 +18,8 @@ This app models family data as a directed graph:
 - **EdgeEntity:** a single edge type that represents categories, private notes, or relations
   (`isCategory`, `isNote`, `isRelation` helpers).
 - **UserEntity:** user identity linked to a node (UUID id).
-- **ProfileEntity:** versioned profile data such as phone digits.
+- **ProfileEntity:** versioned profile metadata (no phone digits stored in rumor).
 - **NodeValue / EdgeValue / Profile:** versioned values with `created_at` / `expired_at`.
-- Phone patterns are no longer modeled; profiles store digits-only values.
-
 ## Example modeling patterns
 
 **1) Gender category**
@@ -59,7 +57,7 @@ docker compose up -d
 mvn spring-boot:run
 ```
 
-3. Start the Unified Authentication Service (UAS) on port `8081` and configure JWT validation (see
+3. Start the Unified Authentication Service (UAS) and configure JWT validation (see
    **Authentication & Security** below).
 
 4. Open the admin UI:
@@ -108,6 +106,7 @@ curl -H "Accept: application/ld+json" \
 
 ```bash
 curl -X POST "http://localhost:8080/public/graph" \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "Accept: application/ld+json" \
   -d '{
@@ -121,6 +120,7 @@ curl -X POST "http://localhost:8080/public/graph" \
 
 ```bash
 curl -X PATCH "http://localhost:8080/public/values" \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -H "Accept: application/ld+json" \
   -d '{
@@ -142,69 +142,53 @@ Database settings live in `src/main/resources/application.yml` and default to:
 
 ### Authentication & Security (JWT Resource Server)
 
-This app is now a Spring Security resource server. It expects **access tokens** as Bearer JWTs issued
-by the Unified Authentication Service (UAS) and stores them in HttpOnly cookies for browser flows.
+This app is a Spring Security resource server. It expects **access tokens** as Bearer JWTs issued
+by the Unified Authentication Service (UAS). Rumor does **not** implement login, OTP, or refresh
+flows. Configure the UAS as the only issuer and validate JWTs locally with JWKS.
 
 **Required configuration**
 
-Set the JWT issuer or JWKS endpoint provided by the UAS:
+Set the JWT issuer or JWKS endpoint provided by the UAS (discovery or direct JWKS):
 
 ```yaml
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH_ISSUER_URI:}
+          jwk-set-uri: ${AUTH_JWK_SET_URI:}
+
 auth:
-  base-url: http://localhost:8081
-security:
-  jwt:
-    issuer-uri: ${AUTH_ISSUER_URI:}
-    jwk-set-uri: ${AUTH_JWK_SET_URI:}
+  expected-issuer: ${AUTH_EXPECTED_ISSUER:}
+  expected-audience: ${AUTH_EXPECTED_AUDIENCE:rumor}
+  permit-public: true
 ```
 
-If the UAS does **not** provide issuer/JWKS settings, you can **only for local development** supply
-an HMAC secret:
+`issuer-uri` uses OpenID discovery (`/.well-known/openid-configuration`); `jwk-set-uri` points
+directly at the UAS JWKS endpoint (e.g. `/.well-known/jwks.json`).
 
-```yaml
-security:
-  jwt:
-    hmac-secret: ${AUTH_JWT_HMAC_SECRET:}
-```
+**Expected claims**
 
-> ⚠️ Never use the HMAC option in production.
+- `roles`: list of roles, mapped to `ROLE_*`
+- `scope` or `scp`: scopes, mapped to `SCOPE_*`
+- `aud`: must include the expected audience (default `rumor`)
 
-**Cookies**
+**Examples**
 
-The UI flow stores tokens as HttpOnly cookies:
-
-- `ACCESS_TOKEN` (JWT access token, Max-Age uses `expiresInSeconds`)
-- `REFRESH_TOKEN` (opaque refresh token, Max-Age uses `auth.refresh-cookie-max-age`)
-
-Both cookies are `SameSite=Lax` and `HttpOnly`. Configure secure cookies in production:
-
-```yaml
-auth:
-  cookie-secure: true
+```bash
+curl -H "Authorization: Bearer <token>" http://localhost:8080/api/me
 ```
 
 **Protected endpoints**
 
 - Public:
-  - `GET /public/graph`
-  - `/login`, `/otp/**`, `/auth/refresh`, Swagger UI
+  - `GET /public/graph` (only when `auth.permit-public=true`)
+  - `/admin/**` (temporary open)
 - Authenticated:
-  - `/admin/**`, `/graph/**`
+  - `/api/**`
   - `POST /public/**`, `PATCH /public/**`
-
-**OTP login flow**
-
-1. `GET /login` → submit phone number to `POST /otp/start`
-2. `GET /otp/verify?challengeId=...` → submit OTP to `POST /otp/verify`
-3. Tokens are set in HttpOnly cookies and you are redirected to `/admin/nodes`
-
-**Refresh flow**
-
-`POST /auth/refresh` reads the `REFRESH_TOKEN` cookie and updates both token cookies.
-
-**Logout**
-
-`POST /logout` sends the refresh token to the UAS `/api/v1/auth/logout` endpoint and clears cookies.
+  - all other endpoints by default
 
 ### Local dev escape hatch
 

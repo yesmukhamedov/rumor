@@ -2,7 +2,6 @@ package com.example.graph.converter;
 
 import com.example.graph.model.EdgeEntity;
 import com.example.graph.model.NodeEntity;
-import com.example.graph.model.user.ProfileEntity;
 import com.example.graph.model.user.UserEntity;
 import com.example.graph.model.value.EdgeValueEntity;
 import java.time.OffsetDateTime;
@@ -66,10 +65,6 @@ public class JsonLdConverter {
             entry.put("@id", "user:" + user.getId());
             entry.put("@type", "User");
             entry.put("node", "node:" + user.getNode().getId());
-            ProfileEntity currentProfile = snapshot.getProfiles().get(user.getId());
-            if (currentProfile != null && currentProfile.getPhoneDigits() != null) {
-                entry.put("phoneDigits", currentProfile.getPhoneDigits());
-            }
             graph.add(entry);
         }
 
@@ -121,7 +116,6 @@ public class JsonLdConverter {
         context.put("expiredAt", "expiredAt");
         context.put("value", "value");
         context.put("body", "body");
-        context.put("phoneDigits", "phoneDigits");
         Map<String, Object> from = new LinkedHashMap<>();
         from.put("@id", "from");
         from.put("@type", "@id");

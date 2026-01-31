@@ -10,8 +10,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface ProfileRepository extends JpaRepository<ProfileEntity, Long> {
-    boolean existsByPhoneDigits(String phoneDigits);
-
     List<ProfileEntity> findByUserId(UUID userId);
 
     @Query("""

@@ -1,7 +1,6 @@
 package com.example.graph.converter;
 
 import com.example.graph.model.NodeEntity;
-import com.example.graph.model.user.ProfileEntity;
 import com.example.graph.model.user.UserEntity;
 import com.example.graph.repository.NodeRepository;
 import com.example.graph.repository.UserRepository;
@@ -34,11 +33,4 @@ public class UserPublicConverter {
             });
     }
 
-    public ProfileEntity toProfileEntity(UserEntity user, UserPublicForm form, OffsetDateTime now) {
-        ProfileEntity profile = new ProfileEntity();
-        profile.setUser(user);
-        profile.setPhoneDigits(form.getValue().trim());
-        profile.setCreatedAt(now);
-        return profile;
-    }
 }

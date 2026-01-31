@@ -26,10 +26,6 @@
         <a th:href="@{/admin/edges}">Edges</a>
         <a th:href="@{/admin/users}">Users</a>
         <a th:href="@{/graph/view}">Graph View</a>
-        <form th:action="@{/logout}" method="post" class="inline">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-            <button type="submit">Logout</button>
-        </form>
     </nav>
 </header>
 

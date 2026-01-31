@@ -12,6 +12,4 @@ import lombok.NoArgsConstructor;
 public class UserPublicForm {
     @Schema(description = "Node id for user")
     private Long nodeId;
-    @Schema(description = "Digits-only phone value")
-    private String value;
 }

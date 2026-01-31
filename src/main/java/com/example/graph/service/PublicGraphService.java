@@ -8,13 +8,11 @@ import com.example.graph.model.EdgeEntity;
 import com.example.graph.model.NodeEntity;
 import com.example.graph.model.value.EdgeValueEntity;
 import com.example.graph.model.value.NodeValueEntity;
-import com.example.graph.model.user.ProfileEntity;
 import com.example.graph.model.user.UserEntity;
 import com.example.graph.repository.EdgeRepository;
 import com.example.graph.repository.EdgeValueRepository;
 import com.example.graph.repository.NodeRepository;
 import com.example.graph.repository.NodeValueRepository;
-import com.example.graph.repository.ProfileRepository;
 import com.example.graph.repository.UserRepository;
 import com.example.graph.service.user.ProfileService;
 import com.example.graph.service.value.EdgeValueService;
@@ -53,7 +51,6 @@ public class PublicGraphService {
     private final ProfileService profileService;
     private final NodeValueRepository nodeValueRepository;
     private final EdgeValueRepository edgeValueRepository;
-    private final ProfileRepository profileRepository;
     private final NodePublicConverter nodePublicConverter;
     private final EdgePublicConverter edgePublicConverter;
     private final UserPublicConverter userPublicConverter;
@@ -69,7 +66,6 @@ public class PublicGraphService {
                               ProfileService profileService,
                               NodeValueRepository nodeValueRepository,
                               EdgeValueRepository edgeValueRepository,
-                              ProfileRepository profileRepository,
                               NodePublicConverter nodePublicConverter,
                               EdgePublicConverter edgePublicConverter,
                               UserPublicConverter userPublicConverter,
@@ -84,7 +80,6 @@ public class PublicGraphService {
         this.profileService = profileService;
         this.nodeValueRepository = nodeValueRepository;
         this.edgeValueRepository = edgeValueRepository;
-        this.profileRepository = profileRepository;
         this.nodePublicConverter = nodePublicConverter;
         this.edgePublicConverter = edgePublicConverter;
         this.userPublicConverter = userPublicConverter;
@@ -151,8 +146,7 @@ public class PublicGraphService {
         }
 
         for (UserPublicForm form : users) {
-            UserEntity user = userPublicConverter.toEntity(form, now);
-            updateProfileValue(user, userPublicConverter.toProfileEntity(user, form, now), now);
+            userPublicConverter.toEntity(form, now);
         }
     }
 
@@ -223,16 +217,6 @@ public class PublicGraphService {
             edgeValueRepository.save(current);
         }
         edgeValueRepository.save(next);
-    }
-
-    private void updateProfileValue(UserEntity user, ProfileEntity next, OffsetDateTime effectiveAt) {
-        ProfileEntity current = profileRepository.findCurrentProfileByUserId(user.getId(), effectiveAt)
-            .orElse(null);
-        if (current != null) {
-            current.setExpiredAt(effectiveAt);
-            profileRepository.save(current);
-        }
-        profileRepository.save(next);
     }
 
     private void applyNodeValueUpdate(NodeValueForm form, OffsetDateTime now) {

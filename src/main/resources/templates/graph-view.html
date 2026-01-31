@@ -24,10 +24,6 @@
     <h1>Graph View</h1>
     <p>
         <a th:href="@{/admin/nodes}">Admin</a>
-        <form th:action="@{/logout}" method="post" style="display:inline;">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-            <button type="submit">Logout</button>
-        </form>
     </p>
     <div class="layout">
         <div id="network"></div>

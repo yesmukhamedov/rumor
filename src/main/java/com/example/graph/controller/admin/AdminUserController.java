@@ -46,7 +46,7 @@ public class AdminUserController {
             return "redirect:/admin/users";
         }
         try {
-            userService.createUserForNode(userForm.getNodeId(), userForm.getPhoneDigits());
+            userService.createUserForNode(userForm.getNodeId());
             redirectAttributes.addFlashAttribute("success", "User created.");
         } catch (IllegalArgumentException | ValidationException ex) {
             redirectAttributes.addFlashAttribute("error", ex.getMessage());

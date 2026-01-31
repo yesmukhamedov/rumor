@@ -11,5 +11,4 @@ import lombok.NoArgsConstructor;
 public class UserDto {
     private UUID id;
     private String nodeName;
-    private String phoneDigits;
 }
