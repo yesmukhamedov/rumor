@@ -2,6 +2,7 @@ package com.example.graph.security;
 
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -22,9 +23,10 @@ import org.springframework.util.StringUtils;
 
 @Configuration
 @Profile("!permit-all")
+@ConditionalOnProperty(prefix = "auth.security", name = "enabled", havingValue = "true")
 @EnableMethodSecurity
 @EnableConfigurationProperties(AuthSecurityProperties.class)
-public class SecurityConfig {
+public class SecurityEnabledConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
                                                    AuthSecurityProperties authSecurityProperties,
@@ -62,6 +64,11 @@ public class SecurityConfig {
                                  OAuth2ResourceServerProperties resourceServerProperties) {
         String issuerUri = resourceServerProperties.getJwt().getIssuerUri();
         String jwkSetUri = resourceServerProperties.getJwt().getJwkSetUri();
+        if (!StringUtils.hasText(issuerUri) && !StringUtils.hasText(jwkSetUri)) {
+            throw new IllegalStateException(
+                "JWT security enabled, but neither spring.security.oauth2.resourceserver.jwt.issuer-uri nor "
+                    + "jwk-set-uri is configured.");
+        }
         NimbusJwtDecoder decoder = buildDecoder(issuerUri, jwkSetUri);
         String expectedIssuer = StringUtils.hasText(authSecurityProperties.getExpectedIssuer())
             ? authSecurityProperties.getExpectedIssuer()

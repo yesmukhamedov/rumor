@@ -5,5 +5,7 @@ spring:
         jwt:
           issuer-uri: http://localhost:8080
 auth:
+  security:
+    enabled: true
   expected-issuer: http://localhost:8080
   expected-audience: rumor
