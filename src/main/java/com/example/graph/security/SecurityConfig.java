@@ -18,7 +18,6 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 @Configuration
@@ -30,9 +29,14 @@ public class SecurityConfig {
     private static final String ISSUER_URI_PROPERTY = "spring.security.oauth2.resourceserver.jwt.issuer-uri";
     private static final String JWK_SET_URI_PROPERTY = "spring.security.oauth2.resourceserver.jwt.jwk-set-uri";
 
+    private final AuthSecurityProperties authSecurityProperties;
+
+    public SecurityConfig(AuthSecurityProperties authSecurityProperties) {
+        this.authSecurityProperties = authSecurityProperties;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   AuthSecurityProperties authSecurityProperties,
                                                    JwtAuthConverter jwtAuthConverter,
                                                    Environment environment,
                                                    ObjectProvider<JwtDecoder> jwtDecoderProvider) throws Exception {
@@ -58,12 +62,13 @@ public class SecurityConfig {
             });
 
         if (jwtEnabled) {
-            JwtDecoder decoder = jwtDecoderProvider.getIfAvailable();
-            if (decoder == null) {
-                decoder = buildDecoder(authSecurityProperties, issuer, jwkSetUri);
-            }
+            JwtDecoder providedDecoder = jwtDecoderProvider.getIfAvailable();
+            final JwtDecoder decoder = providedDecoder != null
+                ? providedDecoder
+                : buildDecoder(issuer, jwkSetUri);
+            final JwtAuthConverter converter = jwtAuthConverter;
             http.oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.decoder(decoder)
-                .jwtAuthenticationConverter(jwtAuthConverter)));
+                .jwtAuthenticationConverter(converter)));
         } else {
             LOG.warn("JWT disabled (issuer-uri/jwk-set-uri not set). Running in OPEN MODE.");
             http.oauth2ResourceServer(oauth -> oauth.disable());
@@ -77,22 +82,22 @@ public class SecurityConfig {
         return new JwtAuthConverter();
     }
 
-    private NimbusJwtDecoder buildDecoder(AuthSecurityProperties authSecurityProperties,
-                                          String issuerUri,
-                                          String jwkSetUri) {
+    private JwtDecoder buildDecoder(String issuerUri,
+                                    String jwkSetUri) {
         if (StringUtils.hasText(issuerUri)) {
             NimbusJwtDecoder decoder = (NimbusJwtDecoder) JwtDecoders.fromIssuerLocation(issuerUri);
-            configureDecoderValidators(decoder, authSecurityProperties, issuerUri);
+            configureDecoderValidators(decoder, issuerUri);
             return decoder;
         }
-        Assert.hasText(jwkSetUri, "jwk-set-uri must be set when issuer-uri is not configured");
+        if (!StringUtils.hasText(jwkSetUri)) {
+            throw new IllegalStateException("JWT enabled but no issuer/jwks configured");
+        }
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
-        configureDecoderValidators(decoder, authSecurityProperties, null);
+        configureDecoderValidators(decoder, null);
         return decoder;
     }
 
     private void configureDecoderValidators(NimbusJwtDecoder decoder,
-                                            AuthSecurityProperties authSecurityProperties,
                                             String issuerUri) {
         String expectedIssuer = StringUtils.hasText(authSecurityProperties.getExpectedIssuer())
             ? authSecurityProperties.getExpectedIssuer()
