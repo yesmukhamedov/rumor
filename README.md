@@ -57,7 +57,10 @@ docker compose up -d
 mvn spring-boot:run
 ```
 
-3. Open the admin UI:
+3. Start the Unified Authentication Service (UAS) on port `8081` and configure JWT validation (see
+   **Authentication & Security** below).
+
+4. Open the admin UI:
 
 - http://localhost:8080/admin/nodes
 - http://localhost:8080/admin/edges
@@ -134,6 +137,81 @@ Database settings live in `src/main/resources/application.yml` and default to:
 - User: `graph`
 - Password: `graph`
 - URL: `jdbc:postgresql://localhost:5432/graphdb`
+
+### Authentication & Security (JWT Resource Server)
+
+This app is now a Spring Security resource server. It expects **access tokens** as Bearer JWTs issued
+by the Unified Authentication Service (UAS) and stores them in HttpOnly cookies for browser flows.
+
+**Required configuration**
+
+Set the JWT issuer or JWKS endpoint provided by the UAS:
+
+```yaml
+auth:
+  base-url: http://localhost:8081
+security:
+  jwt:
+    issuer-uri: ${AUTH_ISSUER_URI:}
+    jwk-set-uri: ${AUTH_JWK_SET_URI:}
+```
+
+If the UAS does **not** provide issuer/JWKS settings, you can **only for local development** supply
+an HMAC secret:
+
+```yaml
+security:
+  jwt:
+    hmac-secret: ${AUTH_JWT_HMAC_SECRET:}
+```
+
+> ⚠️ Never use the HMAC option in production.
+
+**Cookies**
+
+The UI flow stores tokens as HttpOnly cookies:
+
+- `ACCESS_TOKEN` (JWT access token, Max-Age uses `expiresInSeconds`)
+- `REFRESH_TOKEN` (opaque refresh token, Max-Age uses `auth.refresh-cookie-max-age`)
+
+Both cookies are `SameSite=Lax` and `HttpOnly`. Configure secure cookies in production:
+
+```yaml
+auth:
+  cookie-secure: true
+```
+
+**Protected endpoints**
+
+- Public:
+  - `GET /public/graph`
+  - `/login`, `/otp/**`, `/auth/refresh`, Swagger UI
+- Authenticated:
+  - `/admin/**`, `/graph/**`
+  - `POST /public/**`, `PATCH /public/**`
+
+**OTP login flow**
+
+1. `GET /login` → submit phone number to `POST /otp/start`
+2. `GET /otp/verify?challengeId=...` → submit OTP to `POST /otp/verify`
+3. Tokens are set in HttpOnly cookies and you are redirected to `/admin/nodes`
+
+**Refresh flow**
+
+`POST /auth/refresh` reads the `REFRESH_TOKEN` cookie and updates both token cookies.
+
+**Logout**
+
+`POST /logout` sends the refresh token to the UAS `/api/v1/auth/logout` endpoint and clears cookies.
+
+### Local dev escape hatch
+
+If you need to disable auth entirely for local development, you can run with the `permit-all`
+profile (this is isolated by profile and disabled by default):
+
+```bash
+SPRING_PROFILES_ACTIVE=permit-all mvn spring-boot:run
+```
 
 ## Seed data
 

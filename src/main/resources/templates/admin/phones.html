@@ -26,6 +26,10 @@
         <a th:href="@{/admin/edges}">Edges</a>
         <a th:href="@{/admin/phones}">Phones</a>
         <a th:href="@{/graph/view}">Graph View</a>
+        <form th:action="@{/logout}" method="post" class="inline">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+            <button type="submit">Logout</button>
+        </form>
     </nav>
 </header>
 
@@ -35,6 +39,7 @@
 <section>
     <h2>Create Phone</h2>
     <form th:action="@{/admin/phones}" method="post" th:object="${phoneForm}">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
         <div class="form-row">
             <label for="nodeId">Node</label>
             <select id="nodeId" th:field="*{nodeId}" required>
@@ -85,6 +90,7 @@
             <td th:text="${phone.currentValue.displayValue}"></td>
             <td>
                 <form class="inline" th:action="@{/admin/phones/{id}/delete(id=${phone.id})}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
                     <button type="submit">Delete</button>
                 </form>
             </td>
