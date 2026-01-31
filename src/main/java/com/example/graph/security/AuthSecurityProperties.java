@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class AuthSecurityProperties {
     private String expectedIssuer;
     private List<String> expectedAudience = new ArrayList<>();
-    private boolean permitPublic = true;
+    private String securityMode;
 
     public String getExpectedIssuer() {
         return expectedIssuer;
@@ -26,11 +26,11 @@ public class AuthSecurityProperties {
         this.expectedAudience = expectedAudience;
     }
 
-    public boolean isPermitPublic() {
-        return permitPublic;
+    public String getSecurityMode() {
+        return securityMode;
     }
 
-    public void setPermitPublic(boolean permitPublic) {
-        this.permitPublic = permitPublic;
+    public void setSecurityMode(String securityMode) {
+        this.securityMode = securityMode;
     }
 }

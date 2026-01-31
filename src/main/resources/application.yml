@@ -11,12 +11,6 @@ spring:
         format_sql: true
   flyway:
     enabled: true
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${AUTH_ISSUER_URI:#{null}}
-          jwk-set-uri: ${AUTH_JWK_SET_URI:#{null}}
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
@@ -26,6 +20,6 @@ springdoc:
 server:
   port: 8080
 auth:
-  expected-issuer: ${AUTH_EXPECTED_ISSUER:#{null}}
+  expected-issuer: ${AUTH_EXPECTED_ISSUER:}
   expected-audience: ${AUTH_EXPECTED_AUDIENCE:rumor}
-  permit-public: true
+  security-mode: ${AUTH_SECURITY_MODE:auto}
